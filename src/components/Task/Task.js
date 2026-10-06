@@ -99,6 +99,14 @@ const Task = (props) => {
                 setValue={props.setValue}
                 duration={props.duration}
                 setDuration={props.setDuration}
+                optimisticDuration={props.optimisticDuration}
+                setOptimisticDuration={props.setOptimisticDuration}
+                mostLikelyDuration={props.mostLikelyDuration}
+                setMostLikelyDuration={props.setMostLikelyDuration}
+                pessimisticDuration={props.pessimisticDuration}
+                setPessimisticDuration={props.setPessimisticDuration}
+                estimateRisk={props.estimateRisk}
+                setEstimateRisk={props.setEstimateRisk}
                 deadline={props.deadline}
                 setDeadline={props.setDeadline}
                 dependencies={props.dependencies}

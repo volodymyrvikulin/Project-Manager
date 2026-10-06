@@ -1,24 +1,26 @@
 .myBtn {
-    font-size: 14px;
-    background-color: #4A90E2;
-    border: 1px solid #4A90E2;
-    cursor: pointer;
-    color: white;
-    padding: 8px 15px;
-    margin: 3px;
-    border-radius: 6px;
-    transition: background-color 0.3s, box-shadow 0.3s;
-    box-shadow: 0 2px 4px rgba(74, 144, 226, 0.2);
+  font-size: 16px;
+  background-color: #4a90e2;
+  border: 1px solid #4a90e2;
+  cursor: pointer;
+  color: white;
+  padding: 10px 18px;
+  margin: 3px;
+  border-radius: 6px;
+  transition:
+    background-color 0.3s,
+    box-shadow 0.3s;
+  box-shadow: 0 2px 4px rgba(74, 144, 226, 0.2);
 }
 
 .myBtn:hover {
-    background-color: #357ABD;
-    box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
+  background-color: #357abd;
+  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
 }
 
 .disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    background-color: #A3BFFA;
-    box-shadow: none;
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #a3bffa;
+  box-shadow: none;
 }

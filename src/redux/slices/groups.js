@@ -26,6 +26,11 @@ export const fetchCreateTask = createAsyncThunk('groups/fetchCreateTask', async 
     return data;
 });
 
+export const fetchGenerateTasks = createAsyncThunk('groups/fetchGenerateTasks', async ({ description, id }) => {
+    const { data } = await axios.post(`/ai/groups/${id}/tasks`, { description });
+    return data.tasks;
+});
+
 export const fetchDeleteTask = createAsyncThunk('groups/fetchDeleteTask', async ({ groupId, taskId }) => {
     const { data } = await axios.delete(`/tasks/${groupId}/${taskId}/`);
     return data;

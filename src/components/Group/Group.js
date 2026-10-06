@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import AddTaskForm from '../AddTaskForm/AddTaskForm.js';
+import GenerateTasksForm from '../GenerateTasksForm/GenerateTasksForm.js';
 import { useNavigate, Navigate } from "react-router-dom";
 import Task from '../Task/Task';
 import MyModal from '../ui/modal/MyModal';
@@ -10,7 +11,7 @@ import { selectIsAuth, selectAuthData } from '../../redux/slices/auth';
 import InviteUserForm from '../InviteUserForm/InviteUserForm';
 import EditGroupForm from '../EditGroupForm/EditGroupForm';
 import MembersList from '../MembersList/MembersList';
-import { FaPlus, FaTrash, FaChartBar, FaPencilAlt, FaUserPlus } from 'react-icons/fa';
+import { FaPlus, FaMagic, FaTrash, FaChartBar, FaPencilAlt, FaUserPlus } from 'react-icons/fa';
 
 const Group = ({
     group,
@@ -31,10 +32,15 @@ const Group = ({
     const [edit, setEdit] = useState(null);
     const [value, setValue] = useState('');
     const [duration, setDuration] = useState(1);
+    const [optimisticDuration, setOptimisticDuration] = useState(1);
+    const [mostLikelyDuration, setMostLikelyDuration] = useState(1);
+    const [pessimisticDuration, setPessimisticDuration] = useState(1);
+    const [estimateRisk, setEstimateRisk] = useState(false);
     const [deadline, setDeadline] = useState('');
     const [dependencies, setDependencies] = useState([]);
     const [assignedTo, setAssignedTo] = useState('');
     const [modalTaskVisible, setModalTaskVisible] = useState(false);
+    const [modalGenerateTasksVisible, setModalGenerateTasksVisible] = useState(false);
     const [modalGroupEditVisible, setModalGroupEditVisible] = useState(false);
     const [modalInviteVisible, setModalInviteVisible] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
@@ -120,6 +126,10 @@ const Group = ({
         setEdit(task._id);
         setValue(task.title);
         setDuration(task.duration || 1);
+        setEstimateRisk(Boolean(task.pert && Number(task.pert.standardDeviation) > 0));
+        setOptimisticDuration(task.pert?.optimistic || task.duration || 1);
+        setMostLikelyDuration(task.pert?.mostLikely || task.duration || 1);
+        setPessimisticDuration(task.pert?.pessimistic || task.duration || 1);
         setDeadline(task.deadline ? new Date(task.deadline).toISOString().split('T')[0] : '');
         setDependencies(task.dependencies || []);
         setAssignedTo(task.assignedTo || '');
@@ -130,6 +140,23 @@ const Group = ({
             ...task,
             title: value,
             duration: Number(duration),
+            ...(estimateRisk && (() => {
+                const optimistic = Math.max(1, Number(optimisticDuration) || Number(duration) || 1);
+                const mostLikely = Math.max(optimistic, Number(mostLikelyDuration) || optimistic);
+                const pessimistic = Math.max(mostLikely, Number(pessimisticDuration) || mostLikely);
+                const expected = (optimistic + (4 * mostLikely) + pessimistic) / 6;
+                const standardDeviation = (pessimistic - optimistic) / 6;
+                return {
+                    pert: {
+                        optimistic,
+                        mostLikely,
+                        pessimistic,
+                        expected,
+                        standardDeviation,
+                        variance: standardDeviation ** 2,
+                    },
+                };
+            })()),
             deadline: deadline ? new Date(deadline).toISOString() : undefined,
             dependencies: dependencies || [],
             assignedTo: assignedTo || null,
@@ -138,6 +165,10 @@ const Group = ({
         setEdit(null);
         setValue('');
         setDuration(1);
+        setOptimisticDuration(1);
+        setMostLikelyDuration(1);
+        setPessimisticDuration(1);
+        setEstimateRisk(false);
         setDeadline('');
         setDependencies([]);
         setAssignedTo('');
@@ -239,10 +270,16 @@ const Group = ({
             <div className={styles.groupHeaderWrapper}>
                 <div className={styles.actions}>
                     {canAddTasks && (
-                        <button onClick={() => setModalTaskVisible(true)} className={styles.iconButton} aria-label="Створити задачу">
-                            <FaPlus />
-                            <span className={styles.tooltip}>Створити задачу</span>
-                        </button>
+                        <>
+                            <button onClick={() => setModalTaskVisible(true)} className={styles.iconButton} aria-label="Створити задачу">
+                                <FaPlus />
+                                <span className={styles.tooltip}>Створити задачу</span>
+                            </button>
+                            <button onClick={() => setModalGenerateTasksVisible(true)} className={styles.iconButton} aria-label="Згенерувати задачі">
+                                <FaMagic />
+                                <span className={styles.tooltip}>Згенерувати задачі</span>
+                            </button>
+                        </>
                     )}
                     {isOwner && (
                         <>
@@ -268,6 +305,9 @@ const Group = ({
             </div>
             <MyModal visible={modalTaskVisible} setVisible={setModalTaskVisible}>
                 <AddTaskForm id={group._id} setVisible={setModalTaskVisible} />
+            </MyModal>
+            <MyModal visible={modalGenerateTasksVisible} setVisible={setModalGenerateTasksVisible}>
+                <GenerateTasksForm id={group._id} setVisible={setModalGenerateTasksVisible} />
             </MyModal>
             <MyModal visible={modalInviteVisible} setVisible={setModalInviteVisible}>
                 <InviteUserForm
@@ -310,6 +350,14 @@ const Group = ({
                             setValue={setValue}
                             duration={duration}
                             setDuration={setDuration}
+                            optimisticDuration={optimisticDuration}
+                            setOptimisticDuration={setOptimisticDuration}
+                            mostLikelyDuration={mostLikelyDuration}
+                            setMostLikelyDuration={setMostLikelyDuration}
+                            pessimisticDuration={pessimisticDuration}
+                            setPessimisticDuration={setPessimisticDuration}
+                            estimateRisk={estimateRisk}
+                            setEstimateRisk={setEstimateRisk}
                             deadline={deadline}
                             setDeadline={setDeadline}
                             dependencies={dependencies}

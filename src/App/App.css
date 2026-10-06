@@ -1,52 +1,59 @@
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333333;
 }
 
 #root {
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-    background-color: #F5F7FA;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  background-color: #f5f7fa;
 }
 
 .App {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .mainContent {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
 }
 
 .contentWrapper {
-    display: flex;
-    flex: 1;
-    margin-top: 55px;
+  display: flex;
+  flex: 1;
+  margin-top: 55px;
 }
 
 main {
-    flex: 1;
-    padding: 20px;
-    transition: margin-left 0.3s ease;
-    background-color: #F5F7FA;
+  flex: 1;
+  padding: 24px;
+  transition: margin-left 0.3s ease;
+  background-color: #f5f7fa;
 }
 
 main.sidebar-open {
-    margin-left: 25%;
+  margin-left: 25%;
 }
 
 .pageContent {
-    flex: 1 0 auto;
-    width: 100%;
-    padding: 20px;
-    box-sizing: border-box;
-    background-color: #F5F7FA;
+  flex: 1 0 auto;
+  width: 100%;
+  padding: 24px;
+  box-sizing: border-box;
+  background-color: #f5f7fa;
 }

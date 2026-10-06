@@ -1,40 +1,40 @@
 .checkboxList {
-    width: 100%;
-    border: 1px solid #D3DDE8;
-    border-radius: 8px;
-    padding: 15px;
-    background-color: #F5F7FA;
-    margin: 8px 0;
+  width: 100%;
+  border: 1px solid #d3dde8;
+  border-radius: 8px;
+  padding: 18px;
+  background-color: #f5f7fa;
+  margin: 8px 0;
 }
 
 .label {
-    font-size: 16px;
-    color: #333333;
-    margin-bottom: 8px;
+  font-size: 17px;
+  color: #333333;
+  margin-bottom: 8px;
 }
 
 .options {
-    max-height: 200px; 
-    overflow-y: auto;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 .option {
-    display: flex;
-    font-size: 16px;
-    align-items: center;
-    padding: 6px 0; 
-    cursor: pointer;
-    color: #333333;
+  display: flex;
+  font-size: 16px;
+  align-items: center;
+  padding: 8px 0;
+  cursor: pointer;
+  color: #333333;
 }
 
 .option input[type="checkbox"] {
-    margin-right: 10px;
-    width: 18px;
-    height: 18px;
+  margin-right: 10px;
+  width: 20px;
+  height: 20px;
 }
 
 .noOptions {
-    color: #999999;
-    font-style: italic;
-    font-size: 14px;
+  color: #999999;
+  font-style: italic;
+  font-size: 15px;
 }

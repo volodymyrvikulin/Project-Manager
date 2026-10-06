@@ -7,6 +7,113 @@ const getDaysDifference = (date1, date2) => {
     return Math.floor(diffInMs / (1000 * 60 * 60 * 24));
 };
 
+export const GANTT_TASK_ROW_HEIGHT = 64;
+
+export const getTaskExpectedDuration = (task) =>
+    Math.max(1, Number(task.pert?.expected) || Number(task.duration) || 1);
+
+export const calculateProjectPert = (tasks) => {
+    const taskMap = new Map(tasks.map(task => [String(task._id), task]));
+    const remainingDependencies = new Map();
+    const dependentTasks = new Map();
+    const readyTasks = [];
+    const finishTimes = new Map();
+    const pathVariances = new Map();
+    const lastTaskByResource = new Map();
+
+    tasks.forEach(task => {
+        const taskId = String(task._id);
+        const dependencies = (task.dependencies || [])
+            .map(dependencyId => String(dependencyId))
+            .filter(dependencyId => taskMap.has(dependencyId));
+        remainingDependencies.set(taskId, dependencies.length);
+
+        dependencies.forEach(dependencyId => {
+            const dependents = dependentTasks.get(dependencyId) || [];
+            dependentTasks.set(dependencyId, [...dependents, taskId]);
+        });
+
+        if (dependencies.length === 0) readyTasks.push(taskId);
+    });
+
+    const getTaskEstimate = (task) => ({
+        expected: Number(task.pert?.expected) || Math.max(1, Number(task.duration) || 1),
+        variance: Number(task.pert?.variance) || 0,
+    });
+
+    let processedTasks = 0;
+    while (readyTasks.length > 0) {
+        readyTasks.sort((firstId, secondId) => {
+            const firstTask = taskMap.get(firstId);
+            const secondTask = taskMap.get(secondId);
+            return new Date(firstTask.createdAt || 0) - new Date(secondTask.createdAt || 0);
+        });
+
+        const taskId = readyTasks.shift();
+        const task = taskMap.get(taskId);
+        const resourceId = task.assignedTo ? String(task.assignedTo) : '__unassigned__';
+        const blockers = [];
+
+        (task.dependencies || []).forEach(dependencyId => {
+            const dependencyIdString = String(dependencyId);
+            if (finishTimes.has(dependencyIdString)) {
+                blockers.push({
+                    finish: finishTimes.get(dependencyIdString),
+                    variance: pathVariances.get(dependencyIdString) || 0,
+                });
+            }
+        });
+
+        const previousTaskId = lastTaskByResource.get(resourceId);
+        if (previousTaskId) {
+            blockers.push({
+                finish: finishTimes.get(previousTaskId) || 0,
+                variance: pathVariances.get(previousTaskId) || 0,
+            });
+        }
+
+        const longestBlocker = blockers.reduce(
+            (longest, blocker) => blocker.finish > longest.finish ? blocker : longest,
+            { finish: 0, variance: 0 }
+        );
+        const estimate = getTaskEstimate(task);
+        finishTimes.set(taskId, longestBlocker.finish + estimate.expected);
+        pathVariances.set(taskId, longestBlocker.variance + estimate.variance);
+        lastTaskByResource.set(resourceId, taskId);
+        processedTasks += 1;
+
+        (dependentTasks.get(taskId) || []).forEach(dependentId => {
+            const dependenciesLeft = remainingDependencies.get(dependentId) - 1;
+            remainingDependencies.set(dependentId, dependenciesLeft);
+            if (dependenciesLeft === 0) readyTasks.push(dependentId);
+        });
+    }
+
+    if (processedTasks < tasks.length) {
+        return tasks.reduce((result, task) => {
+            const estimate = getTaskEstimate(task);
+            return {
+                expected: result.expected + estimate.expected,
+                variance: result.variance + estimate.variance,
+            };
+        }, { expected: 0, variance: 0 });
+    }
+
+    const projectTaskId = [...finishTimes.entries()].reduce(
+        (longest, [taskId, finish]) => finish > longest.finish ? { taskId, finish } : longest,
+        { taskId: null, finish: 0 }
+    ).taskId;
+    const projectPath = {
+        expected: finishTimes.get(projectTaskId) || 0,
+        variance: pathVariances.get(projectTaskId) || 0,
+    };
+
+    return {
+        expected: projectPath.expected,
+        standardDeviation: Math.sqrt(projectPath.variance),
+    };
+};
+
 export const calculateTimings = (tasks, groupCreatedAt) => {
     try {
         const validTasks = tasks.map(task => {
@@ -51,7 +158,7 @@ export const calculateTimings = (tasks, groupCreatedAt) => {
                 current.earliestStart = minEarliestStart;
             }
 
-            current.earliestFinish = current.earliestStart + (current.duration || 1);
+            current.earliestFinish = current.earliestStart + getTaskExpectedDuration(current);
 
             nodes.forEach(node => {
                 if (node.dependencies && node.dependencies.includes(current._id)) {
@@ -100,7 +207,7 @@ export const calculateTimings = (tasks, groupCreatedAt) => {
             }
 
             current.latestFinish = Math.max(current.latestFinish, current.earliestFinish);
-            current.latestStart = current.latestFinish - (current.duration || 1);
+            current.latestStart = current.latestFinish - getTaskExpectedDuration(current);
             current.latestStart = Math.max(current.latestStart, current.earliestStart);
             current.slack = current.latestStart - current.earliestStart;
 
@@ -140,9 +247,9 @@ export const calculateTimings = (tasks, groupCreatedAt) => {
         return tasks.map(task => ({
             ...task,
             earliestStart: 0,
-            earliestFinish: task.duration || 1,
+            earliestFinish: getTaskExpectedDuration(task),
             latestStart: 0,
-            latestFinish: task.duration || 1,
+            latestFinish: getTaskExpectedDuration(task),
             earliestStartDate: new Date(groupCreatedAt),
             earliestFinishDate: new Date(groupCreatedAt),
             latestStartDate: new Date(groupCreatedAt),
@@ -211,7 +318,7 @@ export const optimizeSchedule = (tasks, members, groupCreatedAt) => {
             let assigned = false;
             for (const executor of executors) {
                 const startDay = Math.floor((new Date(task.earliestStartDate) - minStartDate) / (1000 * 60 * 60 * 24));
-                const taskDays = task.duration || Math.ceil((new Date(task.earliestFinishDate) - new Date(task.earliestStartDate)) / (1000 * 60 * 60 * 24));
+                const taskDays = getTaskExpectedDuration(task);
                 const endDay = startDay + taskDays;
 
                 const hasOverlap = executor.occupiedIntervals.some(interval =>
@@ -244,16 +351,16 @@ export const optimizeSchedule = (tasks, members, groupCreatedAt) => {
 
         executor.tasks.forEach((task, index) => {
             const startDay = Math.floor((new Date(task.earliestStartDate) - minStartDate) / (1000 * 60 * 60 * 24));
-            const taskDays = task.duration || Math.ceil((new Date(task.earliestFinishDate) - new Date(task.earliestStartDate)) / (1000 * 60 * 60 * 24));
+            const taskDays = getTaskExpectedDuration(task);
             const endDay = startDay + taskDays;
 
             const level = calculateTaskLevel(executor.occupiedIntervals, startDay, endDay);
 
-            taskOffsets.set(task._id, level * 50);
+            taskOffsets.set(task._id, level * GANTT_TASK_ROW_HEIGHT);
             executor.occupiedIntervals.push({ startDay, endDay, level });
         });
 
-        const maxLevel = Math.max(...Array.from(taskOffsets.values()).map(offset => offset / 50), 0);
+        const maxLevel = Math.max(...Array.from(taskOffsets.values()).map(offset => offset / GANTT_TASK_ROW_HEIGHT), 0);
         executor.tasks = executor.tasks.map(task => ({
             ...task,
             offsetY: taskOffsets.get(task._id) || 0,
@@ -262,4 +369,60 @@ export const optimizeSchedule = (tasks, members, groupCreatedAt) => {
     });
 
     return executors;
+};
+
+export const calculateDeadlineRisk = (task, today = new Date()) => {
+    if (!task.deadline) {
+        return {
+            riskScore: 0,
+            riskLevel: 'low',
+            riskReason: 'Дедлайн не задано',
+        };
+    }
+
+    if (!task.status) {
+        return {
+            riskScore: 0,
+            riskLevel: 'low',
+            riskReason: 'Задачу виконано',
+        };
+    }
+
+    const deadline = new Date(task.deadline);
+    const daysRemaining = getDaysDifference(deadline, today);
+    const duration = Math.max(1, Number(task.duration) || 1);
+    const expectedDuration = Math.max(1, Number(task.pert?.expected) || duration);
+    const standardDeviation = Math.max(0, Number(task.pert?.standardDeviation) || 0);
+    const plannedStart = task.earliestStartDate ? new Date(task.earliestStartDate) : new Date(today);
+    const plannedFinish = new Date(plannedStart);
+    plannedFinish.setTime(plannedStart.getTime() + expectedDuration * 24 * 60 * 60 * 1000);
+    const daysAvailableForTask = getDaysDifference(deadline, plannedStart);
+    const plannedFinishAfterDeadline = plannedFinish.getTime() > deadline.getTime();
+    const dependencyPenalty = Math.min(15, (task.dependencies || []).length * 5);
+
+    let riskScore;
+    let riskReason;
+    if (daysRemaining < 0 || daysAvailableForTask < 0 || plannedFinishAfterDeadline) {
+        riskScore = 100;
+        riskReason = 'PERT-прогноз завершення перевищує дедлайн';
+    } else if (daysAvailableForTask <= expectedDuration + standardDeviation) {
+        riskScore = 70;
+        riskReason = 'Дедлайн потрапляє в зону невизначеності PERT';
+    } else if (daysAvailableForTask <= expectedDuration * 1.5) {
+        riskScore = 45;
+        riskReason = 'Невеликий запас часу за PERT-прогнозом';
+    } else {
+        riskScore = 15;
+        riskReason = 'Достатній запас часу за PERT-прогнозом';
+    }
+
+    riskScore = Math.min(100, riskScore + dependencyPenalty);
+
+    return {
+        riskScore,
+        riskLevel: riskScore >= 70 ? 'high' : riskScore >= 40 ? 'medium' : 'low',
+        riskReason: dependencyPenalty
+            ? `${riskReason}; ${task.dependencies.length} залежностей`
+            : riskReason,
+    };
 };

@@ -1,16 +1,16 @@
 .myInp {
-    width: 100%;
-    margin: 5px 0;
-    padding: 8px 10px;
-    border: 1px solid #D3DDE8;
-    border-radius: 6px;
-    font-size: 14px;
-    background-color: #FFFFFF;
-    transition: border-color 0.2s ease;
+  width: 100%;
+  margin: 5px 0;
+  padding: 11px 12px;
+  border: 1px solid #d3dde8;
+  border-radius: 6px;
+  font-size: 16px;
+  background-color: #ffffff;
+  transition: border-color 0.2s ease;
 }
 
 .myInp:focus {
-    outline: none;
-    border-color: #4A90E2;
-    box-shadow: 0 0 5px rgba(74, 144, 226, 0.2);
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 5px rgba(74, 144, 226, 0.2);
 }

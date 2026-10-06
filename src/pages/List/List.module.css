@@ -1,110 +1,112 @@
 .listContainer {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
-    margin-top: 55px;
-    background-color: #F5F7FA;
-    position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  margin-top: 0;
+  background-color: #f5f7fa;
+  position: relative;
 }
 
 .mainContent {
-    flex: 1;
-    padding: 20px;
-    overflow-y: auto;
-    box-sizing: border-box;
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    transition: padding-left 0.3s ease;
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  box-sizing: border-box;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  transition: padding-left 0.3s ease;
 }
 
 .mainContentOpen {
-    padding-left: 275px;
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
+  padding-left: 275px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .list {
-    margin-top: 10px;
-    font-size: 18px;
-    text-align: center;
-    color: #333333;
+  margin-top: 10px;
+  font-size: 18px;
+  text-align: center;
+  color: #333333;
 }
 
 .actions {
-    display: flex;
-    gap: 10px;
-    margin: 10px 0;
-    margin-right: 25px;
-    justify-content: flex-end;
-    max-width: 1200px;
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+  margin-right: 25px;
+  justify-content: flex-end;
+  max-width: 1200px;
 }
 
 .groupsWrapper {
-    margin-top: 20px;
-    max-width: 1200px;
+  margin-top: 20px;
+  max-width: 1200px;
 }
 
 .groupItem {
-    margin-bottom: 30px;
-    padding: 15px;
-    background-color: #FFFFFF;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    transition: box-shadow 0.2s ease;
+  margin-bottom: 30px;
+  padding: 15px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
 }
 
 .groupItem:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .iconButton {
-    position: relative;
-    padding: 8px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    transition: background-color 0.2s ease;
+  position: relative;
+  padding: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: background-color 0.2s ease;
 }
 
 .iconButton:hover {
-    background-color: #E6ECF4;
+  background-color: #e6ecf4;
 }
 
 .iconButton svg {
-    font-size: 20px;
-    color: #333333;
-    transition: color 0.2s ease-in-out;
+  font-size: 20px;
+  color: #333333;
+  transition: color 0.2s ease-in-out;
 }
 
 .iconButton:hover svg {
-    color: #4A90E2;
+  color: #4a90e2;
 }
 
 .iconButton:hover .tooltip {
-    visibility: visible;
-    opacity: 1;
+  visibility: visible;
+  opacity: 1;
 }
 
 .tooltip {
-    visibility: hidden;
-    opacity: 0;
-    position: absolute;
-    top: 125%;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #333333;
-    color: white;
-    padding: 5px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    white-space: nowrap;
-    z-index: 10;
-    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+  visibility: hidden;
+  opacity: 0;
+  position: absolute;
+  top: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333333;
+  color: white;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 10;
+  transition:
+    opacity 0.2s ease-in-out,
+    visibility 0.2s ease-in-out;
 }

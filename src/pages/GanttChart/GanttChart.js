@@ -5,7 +5,7 @@ import { selectIsAuth } from '../../redux/slices/auth';
 import { Navigate, Link } from 'react-router-dom';
 import MyButton from '../../components/ui/button/MyButton';
 import styles from './GanttChart.module.css';
-import { sortTasksWithDependencies, optimizeSchedule, calculateTimings, calculateTaskLevel } from '../../utils/ganttUtils';
+import { sortTasksWithDependencies, optimizeSchedule, calculateTimings, calculateTaskLevel, calculateDeadlineRisk, calculateProjectPert, GANTT_TASK_ROW_HEIGHT } from '../../utils/ganttUtils';
 
 const GanttChart = () => {
     const dispatch = useDispatch();
@@ -14,11 +14,17 @@ const GanttChart = () => {
     const isGroupsLoading = groups.status === 'loading';
 
     const [useOptimizedSchedule, setUseOptimizedSchedule] = useState(false);
-    const DAY_WIDTH = 40;
+    const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
 
     useEffect(() => {
         dispatch(fetchGroups());
     }, [dispatch]);
+
+    useEffect(() => {
+        const handleResize = () => setViewportWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     const ganttData = groups.items.flatMap(group =>
         group.tasks.map(task => ({
@@ -70,12 +76,18 @@ const GanttChart = () => {
             </div>
             <h1 className={styles.title}>Діаграма Ганта</h1>
             <div className={styles.optimizationButtonWrapper}>
-                <MyButton
+                    <MyButton
                     onClick={handleToggleOptimization}
                     className={useOptimizedSchedule ? styles.activeButton : ''}
                 >
                     {useOptimizedSchedule ? 'Скасувати оптимізацію' : 'Оптимізувати розклад'}
                 </MyButton>
+                    <div className={styles.legend} aria-label="Легенда ризиків">
+                        <span><i className={`${styles.legendSwatch} ${styles.legendNormal}`} /> Звичайна задача</span>
+                        <span><i className={`${styles.legendSwatch} ${styles.legendMissed}`} /> Прострочена</span>
+                        <span><i className={`${styles.legendSwatch} ${styles.legendMedium}`} /> Середній ризик</span>
+                        <span><i className={`${styles.legendSwatch} ${styles.legendHigh}`} /> Високий ризик</span>
+                    </div>
             </div>
             <div className={styles.ganttContainer}>
                 {Object.keys(groupedTasks).map(groupId => {
@@ -83,8 +95,10 @@ const GanttChart = () => {
                     const group = groups.items.find(g => g._id === groupId);
                     const groupTitle = group ? group.title : 'Невідомий проєкт';
                     const groupCreatedAt = group?.createdAt || new Date();
+                    let projectPert = calculateProjectPert(groupTasks);
 
-                    const adjustedTasks = calculateTimings(groupTasks, groupCreatedAt);
+                    const adjustedTasks = calculateTimings(groupTasks, groupCreatedAt)
+                        .map(task => ({ ...task, ...calculateDeadlineRisk(task) }));
                     const minStartDate = new Date(Math.min(...adjustedTasks.map(task => task.earliestStartDate)));
                     const maxFinishDate = new Date(Math.max(...adjustedTasks.map(task => {
                         const start = new Date(task.earliestStartDate);
@@ -95,7 +109,14 @@ const GanttChart = () => {
                     if (totalDays < 24) {
                         totalDays = 24;
                     }
-                    const totalWidth = totalDays * DAY_WIDTH + 200;
+                    const maxTaskEndDay = Math.max(...adjustedTasks.map(task => {
+                        const startDay = Math.max(0, Math.floor((new Date(task.earliestStartDate) - minStartDate) / (1000 * 60 * 60 * 24)));
+                        return startDay + Math.max(1, Number(task.duration) || 1);
+                    }));
+                    totalDays = Math.max(totalDays, maxTaskEndDay);
+                    const availableWidth = Math.max(320, viewportWidth - 64);
+                    const dayWidth = Math.max(8, Math.floor((availableWidth - 180) / totalDays));
+                    const totalWidth = totalDays * dayWidth + 180;
 
                     const timelineDates = [];
                     for (let i = 0; i < totalDays; i++) {
@@ -111,6 +132,14 @@ const GanttChart = () => {
                         ganttExecutors = optimizeSchedule(adjustedTasks, members, groupCreatedAt);
                         const assignedTaskIds = new Set(ganttExecutors.flatMap(exec => exec.tasks.map(task => task._id)));
                         unassignedTasks = adjustedTasks.filter(task => !assignedTaskIds.has(task._id));
+
+                        const optimizedTasks = ganttExecutors.flatMap((executor, executorIndex) =>
+                            executor.tasks.map(task => ({
+                                ...task,
+                                assignedTo: `optimized-executor-${executorIndex}`,
+                            }))
+                        );
+                        projectPert = calculateProjectPert([...optimizedTasks, ...unassignedTasks]);
                     } else {
                         const assignedTasks = new Set();
                         const executorTasks = members.map(member => {
@@ -127,11 +156,11 @@ const GanttChart = () => {
 
                                 const level = calculateTaskLevel(occupiedIntervals, startDay, endDay);
 
-                                taskOffsets.set(task._id, level * 50);
+                                taskOffsets.set(task._id, level * GANTT_TASK_ROW_HEIGHT);
                                 occupiedIntervals.push({ startDay, endDay, level });
                             });
 
-                            const maxLevel = Math.max(...Array.from(taskOffsets.values()).map(offset => offset / 50), 0);
+                            const maxLevel = Math.max(...Array.from(taskOffsets.values()).map(offset => offset / GANTT_TASK_ROW_HEIGHT), 0);
                             return {
                                 member,
                                 tasks: sortedTasks.map(task => ({
@@ -148,7 +177,15 @@ const GanttChart = () => {
 
                     return (
                         <div key={groupId} className={styles.groupSection}>
-                            <h2 className={styles.groupTitle}>{groupTitle}</h2>
+                            <h2 className={styles.groupTitle}>
+                                {groupTitle}
+                                <span
+                                    className={styles.pertSummary}
+                                    title="Прогноз розраховано методом PERT на основі критичного шляху та невизначеності оцінок задач"
+                                >
+                                    Прогноз завершення: {projectPert.expected.toFixed(1)} дн. ± {projectPert.standardDeviation.toFixed(1)} дн.
+                                </span>
+                            </h2>
                             <div className={styles.scrollableSection}>
                                 <div className={styles.ganttWrapper}>
                                     <div
@@ -161,7 +198,7 @@ const GanttChart = () => {
                                                 <div
                                                     key={index}
                                                     className={styles.ganttTimelineCell}
-                                                    style={{ width: `${DAY_WIDTH}px` }}
+                                                    style={{ width: `${dayWidth}px` }}
                                                 >
                                                     {date.toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit' })}
                                                 </div>
@@ -176,7 +213,7 @@ const GanttChart = () => {
                                             <div
                                                 key={executorIndex}
                                                 className={styles.ganttRow}
-                                                style={{ height: `${(executor.maxLevel + 1) * 50 + 10}px`, minHeight: '60px' }}
+                                                style={{ height: `${(executor.maxLevel + 1) * GANTT_TASK_ROW_HEIGHT + 18}px`, minHeight: `${GANTT_TASK_ROW_HEIGHT + 18}px` }}
                                             >
                                                 <div className={styles.ganttExecutorLabel}>
                                                     {useOptimizedSchedule
@@ -187,26 +224,27 @@ const GanttChart = () => {
                                                     className={styles.ganttRowContent}
                                                     style={{
                                                         display: 'grid',
-                                                        gridTemplateColumns: `repeat(${totalDays}, ${DAY_WIDTH}px)`,
-                                                        width: `${totalDays * DAY_WIDTH}px`,
+                                                        gridTemplateColumns: `repeat(${totalDays}, ${dayWidth}px)`,
+                                                        width: `${totalDays * dayWidth}px`,
                                                     }}
                                                 >
                                                     {executor.tasks.map(task => {
-                                                        const startDay = Math.floor((new Date(task.earliestStartDate) - minStartDate) / (1000 * 60 * 60 * 24));
-                                                        const taskDays = task.duration || Math.ceil((new Date(task.earliestFinishDate) - new Date(task.earliestStartDate)) / (1000 * 60 * 60 * 24));
-                                                        const calculatedWidth = taskDays * DAY_WIDTH;
+                                                        const startDay = Math.min(totalDays - 1, Math.max(0, Math.floor((new Date(task.earliestStartDate) - minStartDate) / (1000 * 60 * 60 * 24))));
+                                                        const rawTaskDays = task.duration || Math.ceil((new Date(task.earliestFinishDate) - new Date(task.earliestStartDate)) / (1000 * 60 * 60 * 24));
+                                                        const taskDays = Math.max(1, Math.min(rawTaskDays, totalDays - startDay));
+                                                        const calculatedWidth = taskDays * dayWidth;
                                                         const taskWidth = Math.max(calculatedWidth, 30);
                                                         return (
                                                             <div
                                                                 key={task._id}
-                                                                className={`${styles.ganttTask} ${task.deadlineMissed ? styles.ganttTaskMissed : styles.ganttTaskNormal}`}
+                                                                className={`${styles.ganttTask} ${task.deadlineMissed ? styles.ganttTaskMissed : styles.ganttTaskNormal} ${styles[`ganttTaskRisk${task.riskLevel[0].toUpperCase()}${task.riskLevel.slice(1)}`]}`}
                                                                 style={{
                                                                     gridColumn: `${startDay + 1} / span ${taskDays}`,
-                                                                    gridRow: `${(task.offsetY || 0) / 50 + 1}`,
+                                                                        gridRow: `${(task.offsetY || 0) / GANTT_TASK_ROW_HEIGHT + 1}`,
                                                                     width: `${taskWidth}px`,
                                                                 }}
                                                             >
-                                                                <div className={styles.ganttTaskContent} title={task.title}>
+                                                                <div className={styles.ganttTaskContent} title={`${task.title}. Ризик: ${task.riskScore}%. ${task.riskReason}`}>
                                                                     <strong>{task.title}</strong>
                                                                 </div>
                                                             </div>
@@ -219,7 +257,10 @@ const GanttChart = () => {
                                         {unassignedTasks.length > 0 && (
                                             <div
                                                 className={styles.ganttRow}
-                                                style={{ height: '150px', minHeight: '60px' }}
+                                                style={{
+                                                    height: `${Math.max(150, unassignedTasks.length * GANTT_TASK_ROW_HEIGHT + 18)}px`,
+                                                    minHeight: `${GANTT_TASK_ROW_HEIGHT + 18}px`,
+                                                }}
                                             >
                                                 <div className={styles.ganttExecutorLabel}>
                                                     Непризначені задачі
@@ -228,8 +269,8 @@ const GanttChart = () => {
                                                     className={styles.ganttRowContent}
                                                     style={{
                                                         display: 'grid',
-                                                        gridTemplateColumns: `repeat(${totalDays}, ${DAY_WIDTH}px)`,
-                                                        width: `${totalDays * DAY_WIDTH}px`,
+                                                        gridTemplateColumns: `repeat(${totalDays}, ${dayWidth}px)`,
+                                                        width: `${totalDays * dayWidth}px`,
                                                     }}
                                                 >
                                                     {(() => {
@@ -238,33 +279,34 @@ const GanttChart = () => {
                                                         const occupiedIntervals = [];
 
                                                         sortedUnassignedTasks.forEach((task, index) => {
-                                                            const startDay = Math.floor((new Date(task.earliestStartDate) - minStartDate) / (1000 * 60 * 60 * 24));
-                                                            const taskDays = task.duration || Math.ceil((new Date(task.earliestFinishDate) - new Date(task.earliestStartDate)) / (1000 * 60 * 60 * 24));
+                                                            const startDay = Math.min(totalDays - 1, Math.max(0, Math.floor((new Date(task.earliestStartDate) - minStartDate) / (1000 * 60 * 60 * 24))));
+                                                            const rawTaskDays = task.duration || Math.ceil((new Date(task.earliestFinishDate) - new Date(task.earliestStartDate)) / (1000 * 60 * 60 * 24));
+                                                            const taskDays = Math.max(1, Math.min(rawTaskDays, totalDays - startDay));
                                                             const endDay = startDay + taskDays;
 
                                                             const level = calculateTaskLevel(occupiedIntervals, startDay, endDay);
 
-                                                            taskOffsets.set(task._id, level * 50);
+                                                            taskOffsets.set(task._id, level * GANTT_TASK_ROW_HEIGHT);
                                                             occupiedIntervals.push({ startDay, endDay, level });
                                                         });
 
                                                         return sortedUnassignedTasks.map(task => {
                                                             const startDay = Math.floor((new Date(task.earliestStartDate) - minStartDate) / (1000 * 60 * 60 * 24));
                                                             const taskDays = task.duration || Math.ceil((new Date(task.earliestFinishDate) - new Date(task.earliestStartDate)) / (1000 * 60 * 60 * 24));
-                                                            const calculatedWidth = taskDays * DAY_WIDTH;
+                                                            const calculatedWidth = taskDays * dayWidth;
                                                             const taskWidth = Math.max(calculatedWidth, 30);
                                                             const offsetY = taskOffsets.get(task._id) || 0;
                                                             return (
                                                                 <div
                                                                     key={task._id}
-                                                                    className={`${styles.ganttTask} ${task.deadlineMissed ? styles.ganttTaskMissed : styles.ganttTaskNormal}`}
+                                                                    className={`${styles.ganttTask} ${task.deadlineMissed ? styles.ganttTaskMissed : styles.ganttTaskNormal} ${styles[`ganttTaskRisk${task.riskLevel[0].toUpperCase()}${task.riskLevel.slice(1)}`]}`}
                                                                     style={{
                                                                         gridColumn: `${startDay + 1} / span ${taskDays}`,
-                                                                        gridRow: `${offsetY / 50 + 1}`,
+                                                                        gridRow: `${offsetY / GANTT_TASK_ROW_HEIGHT + 1}`,
                                                                         width: `${taskWidth}px`,
                                                                     }}
                                                                 >
-                                                                    <div className={styles.ganttTaskContent} title={task.title}>
+                                                                    <div className={styles.ganttTaskContent} title={`${task.title}. Ризик: ${task.riskScore}%. ${task.riskReason}`}>
                                                                         <strong>{task.title}</strong>
                                                                     </div>
                                                                 </div>

@@ -6,7 +6,7 @@ import MySelect from '../ui/select/MySelect';
 import MyModal from '../ui/modal/MyModal';
 import styles from './EditTaskForm.module.css';
 
-const EditTaskForm = ({ visible, setVisible, value, setValue, duration, setDuration, deadline, setDeadline, dependencies, setDependencies, taskOptions, members, saveTask, setEdit, assignedTo, setAssignedTo }) => {
+const EditTaskForm = ({ visible, setVisible, value, setValue, duration, setDuration, optimisticDuration, setOptimisticDuration, mostLikelyDuration, setMostLikelyDuration, pessimisticDuration, setPessimisticDuration, estimateRisk, setEstimateRisk, deadline, setDeadline, dependencies, setDependencies, taskOptions, members, saveTask, setEdit, assignedTo, setAssignedTo }) => {
     const handleSave = () => {
         saveTask();
         setVisible(false);
@@ -15,6 +15,10 @@ const EditTaskForm = ({ visible, setVisible, value, setValue, duration, setDurat
     const handleCancel = () => {
         setValue('');
         setDuration(1);
+        setOptimisticDuration(1);
+        setMostLikelyDuration(1);
+        setPessimisticDuration(1);
+        setEstimateRisk(false);
         setDeadline('');
         setDependencies([]);
         setAssignedTo('');
@@ -31,25 +35,32 @@ const EditTaskForm = ({ visible, setVisible, value, setValue, duration, setDurat
         <MyModal visible={visible} setVisible={setVisible}>
             <div className={styles.editForm}>
                 <h3>Редагувати задачу</h3>
-                <MyInput 
-                    value={value} 
-                    onChange={e => setValue(e.target.value)} 
-                    type="text" 
-                    placeholder="Назва задачі"
-                />
-                <MyInput 
-                    value={duration} 
-                    onChange={e => setDuration(e.target.value)} 
-                    type="number" 
-                    placeholder="Тривалість (дні)" 
-                    min="1"
-                />
-                <MyInput 
-                    value={deadline} 
-                    onChange={e => setDeadline(e.target.value)} 
-                    type="date" 
-                    placeholder="Дедлайн (опціонально)"
-                />
+                <div className={styles.field}>
+                    <label className={styles.fieldLabel} htmlFor="edit-task-title">Назва задачі</label>
+                    <MyInput id="edit-task-title" value={value} onChange={e => setValue(e.target.value)} type="text" placeholder="Введіть назву задачі" />
+                </div>
+                <div className={styles.field}>
+                    <label className={styles.fieldLabel} htmlFor="edit-task-duration">Базова тривалість (дні)</label>
+                    <MyInput id="edit-task-duration" value={duration} onChange={e => setDuration(e.target.value)} type="number" placeholder="Вкажіть тривалість" min="1" />
+                </div>
+                <MyButton
+                    type="button"
+                    className={styles.riskButton}
+                    onClick={() => setEstimateRisk(prev => !prev)}
+                >
+                    {estimateRisk ? 'Сховати оцінки ризику' : 'Оцінити ризики'}
+                </MyButton>
+                {estimateRisk && (
+                    <>
+                        <div className={styles.field}><label className={styles.fieldLabel}>Оптимістичний час (дні)</label><MyInput value={optimisticDuration} onChange={e => setOptimisticDuration(e.target.value)} type="number" min="1" placeholder="За сприятливих умов" /></div>
+                        <div className={styles.field}><label className={styles.fieldLabel}>Найбільш імовірний час (дні)</label><MyInput value={mostLikelyDuration} onChange={e => setMostLikelyDuration(e.target.value)} type="number" min="1" placeholder="Звичайний сценарій" /></div>
+                        <div className={styles.field}><label className={styles.fieldLabel}>Песимістичний час (дні)</label><MyInput value={pessimisticDuration} onChange={e => setPessimisticDuration(e.target.value)} type="number" min="1" placeholder="З урахуванням ризиків" /></div>
+                    </>
+                )}
+                <div className={styles.field}>
+                    <label className={styles.fieldLabel} htmlFor="edit-task-deadline">Дедлайн (опціонально)</label>
+                    <MyInput id="edit-task-deadline" value={deadline} onChange={e => setDeadline(e.target.value)} type="date" aria-label="Дедлайн (опціонально)" />
+                </div>
                 <MyCheckboxList
                     value={dependencies}
                     onChange={setDependencies}

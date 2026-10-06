@@ -1,61 +1,61 @@
 .container {
-    padding: 20px;
-    margin-top: 30px;
-    background-color: #F5F7FA;
-    max-width: 1200px; 
-    margin-left: auto;
-    margin-right: auto;
+  padding: 20px;
+  margin-top: 30px;
+  background-color: #f5f7fa;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .buttonWrapper {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-    justify-content: space-between;
-    align-items: center;
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .buttonGroup {
-    display: flex;
-    gap: 10px;
+  display: flex;
+  gap: 10px;
 }
 
 .buttonGroupLeft {
-    display: flex;
-    gap: 10px;
+  display: flex;
+  gap: 10px;
 }
 
 .backLink {
-    text-decoration: none;
+  text-decoration: none;
 }
 
 .title {
-    text-align: center;
-    margin-bottom: 20px;
-    font-size: 24px;
-    color: #333333; 
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #333333;
 }
 
 .graphWrapper {
-    height: 600px;
-    border: 1px solid #D3DDE8; 
-    border-radius: 8px; 
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-    background-color: #FFFFFF;
-    overflow: hidden;
+  height: 600px;
+  border: 1px solid #d3dde8;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  background-color: #ffffff;
+  overflow: hidden;
 }
 
 .resetButton {
-    margin: 0 auto;
-    display: block;
-    background-color: #4A90E2;
-    color: white;
-    border: 1px solid #4A90E2;
-    border-radius: 6px;
-    padding: 8px 16px;
-    transition: background-color 0.2s ease;
+  margin: 0 auto;
+  display: block;
+  background-color: #4a90e2;
+  color: white;
+  border: 1px solid #4a90e2;
+  border-radius: 6px;
+  padding: 8px 16px;
+  transition: background-color 0.2s ease;
 }
 
 .resetButton:hover {
-    background-color: #357ABD;
+  background-color: #357abd;
 }

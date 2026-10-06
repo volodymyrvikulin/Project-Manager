@@ -1,28 +1,56 @@
 .editForm {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  width: min(460px, 80vw);
+  box-sizing: border-box;
+  margin: 0 auto;
 }
 
 .editForm h3 {
-    font-size: 18px;
-    text-align: center;
-    margin-bottom: 10px;
+  font-size: 22px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fieldLabel {
+  color: #52606d;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .editForm input {
-    padding: 4px;
-    font-size: 12px;
+  min-height: 44px;
+  padding: 11px 12px;
+  font-size: 16px;
+}
+
+.riskButton {
+  width: 100%;
+  min-height: 46px;
 }
 
 .editForm .checkboxList {
-    margin: 4px 0;
+  margin: 4px 0;
 }
 
 .editButtons {
-    display: flex;
-    gap: 8px;
-    justify-content: center;
-    margin-top: 10px;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  width: calc(100% + 36px);
+  margin: 10px -18px 0;
+  padding: 10px 18px 0;
+  background: #ffffff;
+  box-shadow: 0 -6px 12px rgba(255, 255, 255, 0.9);
 }
