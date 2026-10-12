@@ -1,35 +1,154 @@
 .permissionsForm {
     display: flex;
     flex-direction: column;
-    gap: 15px;
-    padding: 15px;
+    gap: 18px;
+    padding: 12px 6px;
+    min-width: 360px;
+    max-width: 540px;
 }
 
-.permissionsForm h3 {
+.formTitle {
+    font-size: 21px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+    text-align: left;
+}
+
+.formSubtitle {
+    font-size: 15px;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.45;
+}
+
+.roleCardsContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 4px;
+}
+
+.roleCard {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 14px 18px;
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    background-color: #f8fafc;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.roleCard:hover {
+    border-color: #93c5fd;
+    background-color: #f0f7ff;
+    transform: translateY(-1px);
+}
+
+.roleCardActive {
+    border-color: #3b82f6;
+    background-color: #eff6ff;
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.15);
+}
+
+.roleCardHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.roleCardIcon {
+    font-size: 26px;
+    line-height: 1;
+}
+
+.roleCardTitle {
     font-size: 18px;
-    text-align: center;
-    margin-bottom: 10px;
+    font-weight: 700;
+    flex: 1;
+}
+
+.selectedBadge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background-color: #3b82f6;
+    color: #ffffff;
+    font-size: 13px;
+}
+
+.roleCardDescription {
+    font-size: 14.5px;
+    color: #475569;
+    line-height: 1.5;
+    margin: 0;
+    padding-left: 38px;
+}
+
+.formActions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.cancelBtn {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1.5px solid #cbd5e1;
+    font-size: 15px;
+    padding: 8px 16px;
+}
+
+.cancelBtn:hover {
+    background-color: #e2e8f0;
+    color: #0f172a;
+}
+
+.saveBtn {
+    background-color: #3b82f6;
+    color: #ffffff;
+    border: 1.5px solid #3b82f6;
+    font-size: 15px;
+    padding: 8px 20px;
+}
+
+.saveBtn:hover {
+    background-color: #2563eb;
+    border-color: #2563eb;
 }
 
 .editPermissionsButton {
     position: relative;
-    padding: 5px;
+    padding: 8px;
     background: none;
     border: none;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    border-radius: 8px;
+    transition: background-color 0.15s ease;
 }
 
 .editPermissionsButton svg {
     font-size: 18px;
-    color: black;
+    color: #475569;
     transition: color 0.2s ease-in-out;
 }
 
+.editPermissionsButton:hover {
+    background-color: #f1f5f9;
+}
+
 .editPermissionsButton:hover svg {
-    color: #007bff;
+    color: #2563eb;
 }
 
 .editPermissionsButton:hover .tooltip {
@@ -44,12 +163,13 @@
     bottom: 125%;
     left: 50%;
     transform: translateX(-50%);
-    background-color: #333;
+    background-color: #1e293b;
     color: white;
-    padding: 5px 8px;
-    border-radius: 4px;
+    padding: 5px 9px;
+    border-radius: 6px;
     font-size: 12px;
     white-space: nowrap;
     z-index: 10;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
 }

@@ -1,19 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import styles from './Header.module.css';
 import Container from '@mui/material/Container';
 import { Link } from "react-router-dom";
 import { useDispatch, useSelector } from 'react-redux';
-import { logout, selectIsAuth } from '../../redux/slices/auth';
+import { logout, selectIsAuth, selectAuthData } from '../../redux/slices/auth';
 import { FaEnvelope, FaSignOutAlt, FaSignInAlt, FaUserPlus, FaUser, FaBars } from 'react-icons/fa';
+import ConfirmModal from '../ConfirmModal/ConfirmModal';
 
 const Header = ({ toggleSidebar, showMenuButton = true }) => {
     const isAuth = useSelector(selectIsAuth);
+    const authData = useSelector(selectAuthData);
     const dispatch = useDispatch();
+    const [logoutModalVisible, setLogoutModalVisible] = useState(false);
+
+    const pendingCount = authData?.pendingInvitations?.filter(i => i.status === 'pending').length || 0;
+
     const onClickLogout = () => {
-        if (window.confirm('Ви дійсно хочете вийти?')) {
-            dispatch(logout());
-            window.localStorage.removeItem('token');
-        }
+        setLogoutModalVisible(true);
+    };
+
+    const handleConfirmLogout = () => {
+        dispatch(logout());
+        window.localStorage.removeItem('token');
     };
 
     return (
@@ -41,7 +49,12 @@ const Header = ({ toggleSidebar, showMenuButton = true }) => {
                                 <Link to="/invitations">
                                     <button className={styles.iconButton} aria-label="Запрошення">
                                         <FaEnvelope />
-                                        <span className={styles.tooltip}>Запрошення</span>
+                                        {pendingCount > 0 && (
+                                            <span className={styles.badge}>{pendingCount}</span>
+                                        )}
+                                        <span className={styles.tooltip}>
+                                            {pendingCount > 0 ? `Запрошення (${pendingCount})` : 'Запрошення'}
+                                        </span>
                                     </button>
                                 </Link>
                                 <button onClick={onClickLogout} className={styles.iconButton} aria-label="Вийти">
@@ -68,6 +81,16 @@ const Header = ({ toggleSidebar, showMenuButton = true }) => {
                     </div>
                 </div>
             </Container>
+            <ConfirmModal
+                visible={logoutModalVisible}
+                setVisible={setLogoutModalVisible}
+                title="Вихід із системи"
+                message="Ви дійсно хочете вийти зі свого акаунту?"
+                confirmText="Вийти"
+                cancelText="Скасувати"
+                danger={true}
+                onConfirm={handleConfirmLogout}
+            />
         </div>
     );
 };

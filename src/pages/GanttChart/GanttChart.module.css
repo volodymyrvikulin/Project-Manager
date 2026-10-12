@@ -36,6 +36,99 @@
   color: #333333;
 }
 
+.controlsBar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px 18px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background-color: #ffffff;
+  border: 1px solid #d3dde8;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.filterGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filterLabel {
+  font-size: 15px;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.projectSelect {
+  padding: 8px 12px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #1e293b;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #f8fafc;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.projectSelect:focus {
+  border-color: #3b82f6;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.resetFilterButton {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.resetFilterButton:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.actionButtons {
+  display: flex;
+  align-items: center;
+}
+
+.emptyContainer,
+.emptyGroupState {
+  padding: 36px 20px;
+  text-align: center;
+  background: #ffffff;
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+  margin: 14px 0;
+  color: #64748b;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.emptyText,
+.emptyGroupState p {
+  font-size: 16px;
+  margin: 0;
+  color: #475569;
+}
+
 .optimizationButtonWrapper {
   text-align: center;
   margin-bottom: 14px;
@@ -53,7 +146,7 @@
   justify-content: center;
   gap: 10px 18px;
   color: #52606d;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .legend span {
@@ -279,23 +372,90 @@
 }
 
 .groupTitle {
-  padding: 14px 16px 8px;
+  padding: 14px 16px 10px;
   font-size: 20px;
   margin: 0;
   text-align: left;
   color: #333333;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.groupTitleText {
+  font-weight: 700;
+  color: #223448;
 }
 
 .pertSummary {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 6px 10px;
-  border: 1px solid #d3dde8;
-  border-radius: 5px;
-  color: #52606d;
-  font-size: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border: 1.5px solid #93c5fd;
+  border-radius: 8px;
+  color: #1e3a8a;
+  font-size: 14px;
   font-weight: 500;
   vertical-align: middle;
+  background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.12);
+  line-height: 1.3;
+  transition: all 0.2s ease;
+}
+
+.pertSummary:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.18);
+  transform: translateY(-1px);
+}
+
+.pertSummaryIcon {
+  font-size: 15px;
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.pertSummaryLabel {
+  color: #1e40af;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+.pertSummaryValue {
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.pertSummaryDeviation {
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 13px;
+  background-color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid #bfdbfe;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.pertProbabilityHigh {
+  color: #1e6935;
+  background-color: #f0fdf4;
+  border-color: #86efac;
+}
+
+.pertProbabilityMedium {
+  color: #925400;
+  background-color: #fffbeb;
+  border-color: #fcd34d;
+}
+
+.pertProbabilityLow {
+  color: #b91c1c;
+  background-color: #fef2f2;
+  border-color: #fca5a5;
 }
 
 @media (max-width: 640px) {
@@ -322,3 +482,117 @@
 .activeButton:hover {
   background-color: #357abd;
 }
+
+.aiRiskButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+  color: #1d4ed8;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.aiRiskButton:hover {
+  background-color: #dbeafe;
+  border-color: #93c5fd;
+  color: #1e40af;
+}
+
+.aiRiskIcon {
+  font-size: 14px;
+  color: #2563eb;
+}
+
+.executorLabelContent {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.executorName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.optimizedBadge {
+  font-size: 10.5px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background-color: #dcfce7;
+  color: #15803d;
+  font-weight: 700;
+  border: 1px solid #86efac;
+  letter-spacing: -0.1px;
+}
+
+.delayBadge {
+  display: inline-block;
+  background: rgba(0, 0, 0, 0.3);
+  color: #ffffff;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.autoAssignedBadge {
+  display: inline-block;
+  background: #f59e0b;
+  color: #ffffff;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+
+.ganttTaskAutoAssigned {
+  border-style: dashed !important;
+}
+
+.optimizationBanner {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1.5px solid #86efac;
+  border-radius: 8px;
+  padding: 12px 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 4px rgba(16, 185, 129, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.optimizationBannerTitle {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #15803d;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.optimizationBannerDesc {
+  font-size: 13px;
+  color: #166534;
+  line-height: 1.45;
+}
+

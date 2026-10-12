@@ -6,7 +6,7 @@ import MySelect from '../ui/select/MySelect';
 import MyModal from '../ui/modal/MyModal';
 import styles from './EditTaskForm.module.css';
 
-const EditTaskForm = ({ visible, setVisible, value, setValue, duration, setDuration, optimisticDuration, setOptimisticDuration, mostLikelyDuration, setMostLikelyDuration, pessimisticDuration, setPessimisticDuration, estimateRisk, setEstimateRisk, deadline, setDeadline, dependencies, setDependencies, taskOptions, members, saveTask, setEdit, assignedTo, setAssignedTo }) => {
+const EditTaskForm = ({ visible, setVisible, value, setValue, description, setDescription, duration, setDuration, optimisticDuration, setOptimisticDuration, mostLikelyDuration, setMostLikelyDuration, pessimisticDuration, setPessimisticDuration, estimateRisk, setEstimateRisk, deadline, setDeadline, dependencies, setDependencies, taskOptions, members, saveTask, setEdit, assignedTo, setAssignedTo }) => {
     const handleSave = () => {
         saveTask();
         setVisible(false);
@@ -14,6 +14,7 @@ const EditTaskForm = ({ visible, setVisible, value, setValue, duration, setDurat
 
     const handleCancel = () => {
         setValue('');
+        setDescription('');
         setDuration(1);
         setOptimisticDuration(1);
         setMostLikelyDuration(1);
@@ -40,13 +41,49 @@ const EditTaskForm = ({ visible, setVisible, value, setValue, duration, setDurat
                     <MyInput id="edit-task-title" value={value} onChange={e => setValue(e.target.value)} type="text" placeholder="Введіть назву задачі" />
                 </div>
                 <div className={styles.field}>
+                    <label className={styles.fieldLabel} htmlFor="edit-task-description">Опис задачі (опціонально)</label>
+                    <textarea
+                        id="edit-task-description"
+                        className={styles.textarea}
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        placeholder="Введіть опис або деталі задачі"
+                        rows="3"
+                    />
+                </div>
+                <div className={styles.field}>
                     <label className={styles.fieldLabel} htmlFor="edit-task-duration">Базова тривалість (дні)</label>
-                    <MyInput id="edit-task-duration" value={duration} onChange={e => setDuration(e.target.value)} type="number" placeholder="Вкажіть тривалість" min="1" />
+                    <MyInput
+                        id="edit-task-duration"
+                        value={duration}
+                        onChange={e => {
+                            const val = e.target.value;
+                            setDuration(val);
+                            if (!estimateRisk) {
+                                setOptimisticDuration(val);
+                                setMostLikelyDuration(val);
+                                setPessimisticDuration(val);
+                            }
+                        }}
+                        type="number"
+                        placeholder="Вкажіть тривалість"
+                        min="1"
+                    />
                 </div>
                 <MyButton
                     type="button"
                     className={styles.riskButton}
-                    onClick={() => setEstimateRisk(prev => !prev)}
+                    onClick={() => {
+                        setEstimateRisk(prev => {
+                            const nextState = !prev;
+                            if (nextState && Number(duration) > 0) {
+                                setOptimisticDuration(duration);
+                                setMostLikelyDuration(duration);
+                                setPessimisticDuration(duration);
+                            }
+                            return nextState;
+                        });
+                    }}
                 >
                     {estimateRisk ? 'Сховати оцінки ризику' : 'Оцінити ризики'}
                 </MyButton>

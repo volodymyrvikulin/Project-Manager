@@ -23,7 +23,7 @@ const List = () => {
         dispatch(fetchGroups());
     }, [dispatch]);
 
-    const [filter, setFilter] = useState({ selectedSort: '', searchTask: '' });
+    const [filter, setFilter] = useState({ selectedSort: '', searchTask: '', searchGroup: '', assignedTo: '' });
     const [modalGroupVisible, setModalGroupVisible] = useState(false);
     const [sidebarVisible, setSidebarVisible] = useState(false);
 
@@ -34,6 +34,18 @@ const List = () => {
     const removeGroup = (group) => {
         dispatch(fetchRemoveGroup(group._id));
     };
+
+    const allMembers = useMemo(() => {
+        const membersMap = new Map();
+        (groups.items || []).forEach(group => {
+            (group.members || []).forEach(m => {
+                if (m && m._id && !membersMap.has(m._id.toString())) {
+                    membersMap.set(m._id.toString(), m);
+                }
+            });
+        });
+        return Array.from(membersMap.values());
+    }, [groups.items]);
 
     const sorted = useMemo(() => {
         const items = [...groups.items];
@@ -76,12 +88,57 @@ const List = () => {
         return items;
     }, [filter.selectedSort, groups.items]);
 
-    const sortedAndSearch = useMemo(() => {
-        if (!filter.searchTask) return sorted;
-        return sorted.filter(group =>
-            group.tasks.some(task => task.title.toLowerCase().includes(filter.searchTask))
-        );
-    }, [sorted, filter.searchTask]);
+    const isFilteringActive = Boolean(filter.searchTask?.trim() || filter.assignedTo);
+
+    const sortedAndFiltered = useMemo(() => {
+        const query = (filter.searchTask || '').trim().toLowerCase();
+        const assignee = filter.assignedTo || '';
+        const isFiltering = Boolean(query || assignee);
+
+        return sorted.map(group => {
+            const allTasks = group.tasks || [];
+            if (!isFiltering) {
+                return {
+                    ...group,
+                    allTasks,
+                };
+            }
+
+            const matchingTasks = allTasks.filter(task => {
+                const matchesSearch = !query ||
+                    (task.title && task.title.toLowerCase().includes(query)) ||
+                    (task.description && task.description.toLowerCase().includes(query));
+
+                let matchesAssignee = true;
+                if (assignee === 'my') {
+                    matchesAssignee = Boolean(authData?._id && task.assignedTo && task.assignedTo.toString() === authData._id.toString());
+                } else if (assignee === 'unassigned') {
+                    matchesAssignee = !task.assignedTo;
+                } else if (assignee) {
+                    matchesAssignee = Boolean(task.assignedTo && task.assignedTo.toString() === assignee.toString());
+                }
+
+                return matchesSearch && matchesAssignee;
+            });
+
+            return {
+                ...group,
+                allTasks,
+                tasks: matchingTasks,
+                totalTasksCount: allTasks.length,
+                filteredTasksCount: matchingTasks.length,
+            };
+        }).filter(group => {
+            if (isFiltering) {
+                return group.tasks.length > 0;
+            }
+            return true;
+        });
+    }, [sorted, filter.searchTask, filter.assignedTo, authData]);
+
+    const totalFoundTasks = useMemo(() => {
+        return sortedAndFiltered.reduce((sum, g) => sum + (g.tasks ? g.tasks.length : 0), 0);
+    }, [sortedAndFiltered]);
 
     if (!isAuth) {
         return <Navigate to='/login' />;
@@ -101,7 +158,13 @@ const List = () => {
                     <MyModal visible={modalGroupVisible} setVisible={setModalGroupVisible}>
                         <AddGroupForm setModalGroupVisible={setModalGroupVisible} />
                     </MyModal>
-                    <GroupsFilter filter={filter} setFilter={setFilter} />
+                    <GroupsFilter
+                        filter={filter}
+                        setFilter={setFilter}
+                        members={allMembers}
+                        currentUserId={authData?._id}
+                        totalFoundTasks={totalFoundTasks}
+                    />
                     <div className={styles.actions}>
                         <Link to="/statistics">
                             <button className={styles.iconButton} aria-label="Загальна статистика">
@@ -129,8 +192,8 @@ const List = () => {
                     <div className={styles.groupsWrapper}>
                         {isGroupsLoading ? (
                             <h1 className={styles.list}>Завантаження</h1>
-                        ) : sortedAndSearch.length > 0 ? (
-                            sortedAndSearch.map((group) => (
+                        ) : sortedAndFiltered.length > 0 ? (
+                            sortedAndFiltered.map((group) => (
                                 <div className={styles.groupItem} key={group._id}>
                                     <Group
                                         group={group}
@@ -138,6 +201,16 @@ const List = () => {
                                     />
                                 </div>
                             ))
+                        ) : isFilteringActive ? (
+                            <div className={styles.emptyFilteredState}>
+                                <h2 className={styles.emptyTitle}>За вашим запитом задач не знайдено</h2>
+                                <button
+                                    onClick={() => setFilter({ selectedSort: '', searchTask: '', searchGroup: '', assignedTo: '' })}
+                                    className={styles.resetSearchBtn}
+                                >
+                                    Скинути фільтри та пошук
+                                </button>
+                            </div>
                         ) : (
                             <h1 className={styles.list}>Проєктів немає</h1>
                         )}

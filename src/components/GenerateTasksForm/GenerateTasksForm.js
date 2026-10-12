@@ -21,10 +21,23 @@ const GenerateTasksForm = ({ setVisible, id }) => {
                 id,
             })).unwrap();
 
-            await Promise.all(generatedTasks.map((task) => dispatch(fetchCreateTask({
-                newTask: task,
-                id,
-            })).unwrap()));
+            const createdTasks = [];
+            for (const task of generatedTasks) {
+                const { dependencyIndices, ...taskData } = task;
+                const dependencies = (dependencyIndices || [])
+                    .map((depIndex) => createdTasks[depIndex]?._id)
+                    .filter(Boolean);
+
+                const created = await dispatch(fetchCreateTask({
+                    newTask: {
+                        ...taskData,
+                        dependencies,
+                    },
+                    id,
+                })).unwrap();
+
+                createdTasks.push(created);
+            }
 
             setDescription('');
             setVisible(false);

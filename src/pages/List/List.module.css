@@ -110,3 +110,35 @@
     opacity 0.2s ease-in-out,
     visibility 0.2s ease-in-out;
 }
+
+.emptyFilteredState {
+  text-align: center;
+  padding: 40px 20px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1.5px dashed #cbd5e1;
+  margin-top: 20px;
+}
+
+.emptyTitle {
+  font-size: 18px;
+  color: #475569;
+  margin: 0 0 16px 0;
+  font-weight: 600;
+}
+
+.resetSearchBtn {
+  padding: 9px 20px;
+  background-color: #3b82f6;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.resetSearchBtn:hover {
+  background-color: #2563eb;
+}

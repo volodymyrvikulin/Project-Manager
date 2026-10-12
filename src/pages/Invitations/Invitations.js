@@ -3,15 +3,31 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import MyButton from '../../components/ui/button/MyButton';
 import styles from './Invitations.module.css';
-import { fetchManageInvitation, fetchAuthMe } from '../../redux/slices/auth';
-import { selectAuthData } from '../../redux/slices/auth';
+import { fetchManageInvitation, fetchAuthMe, selectAuthData } from '../../redux/slices/auth';
+import { FaArrowLeft, FaEnvelopeOpenText } from 'react-icons/fa';
+import { getSocket } from '../../socket';
+import { useToast } from '../../context/ToastContext';
 
 const Invitations = () => {
     const dispatch = useDispatch();
     const authData = useSelector(selectAuthData);
+    const { showToast } = useToast();
 
     useEffect(() => {
         dispatch(fetchAuthMe());
+
+        const socket = getSocket();
+        const handleRefresh = () => {
+            dispatch(fetchAuthMe());
+        };
+
+        socket.on('invitation_received', handleRefresh);
+        socket.on('invitation_accepted', handleRefresh);
+
+        return () => {
+            socket.off('invitation_received', handleRefresh);
+            socket.off('invitation_accepted', handleRefresh);
+        };
     }, [dispatch]);
 
     const pendingInvitations = authData?.pendingInvitations?.filter(
@@ -22,23 +38,29 @@ const Invitations = () => {
         const groupIdString = groupId._id ? groupId._id.toString() : groupId.toString();
         dispatch(fetchManageInvitation({ groupId: groupIdString, action }))
             .then(({ payload }) => {
-                alert(payload.message);
+                showToast(payload.message || (action === 'accept' ? 'Запрошення прийнято!' : 'Запрошення відхилено'), 'success');
+                dispatch(fetchAuthMe());
             })
             .catch((error) => {
-                alert(error.response?.data?.message || `Помилка при ${action === 'accept' ? 'прийманні' : 'відхиленні'} запрошення`);
+                showToast(error.response?.data?.message || `Помилка при ${action === 'accept' ? 'прийманні' : 'відхиленні'} запрошення`, 'error');
             });
     };
 
     return (
         <div className={styles.container}>
             <Link to="/">
-                <MyButton>Назад</MyButton>
+                <MyButton><FaArrowLeft /> Назад</MyButton>
             </Link>
             <h2>Ваші запрошення</h2>
             {pendingInvitations.length === 0 ? (
                 <div className={styles.noInvitations}>
-                    <span className={styles.sadEmoji}>😢</span>
-                    <p className={styles.noInvitationsText}>Немає активних запрошень.</p>
+                    <div className={styles.emptyIconWrapper}>
+                        <FaEnvelopeOpenText className={styles.emptyIcon} />
+                    </div>
+                    <p className={styles.noInvitationsText}>Немає активних запрошень</p>
+                    <p className={styles.noInvitationsSubtext}>
+                        Тут відображатимуться запрошення до спільних проєктів.
+                    </p>
                 </div>
             ) : (
                 <ul className={styles.invitationList}>

@@ -1,29 +1,87 @@
 .membersList {
-    margin-top: 30px;
-    padding: 10px;
-    border: 1px solid #D3DDE8;
-    border-radius: 6px;
-    background-color: #F5F7FA;
+    margin-top: 24px;
+    padding: 16px 20px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.membersList h3 {
-    font-size: 16px;
-    margin-bottom: 10px;
-    color: #333333;
+.headerRow {
+    margin-bottom: 12px;
+}
+
+.headerRow h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+}
+
+.membersUl {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .memberItem {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 0;
-    font-size: 16px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    background-color: #f8fafc;
+    border: 1px solid #f1f5f9;
+    transition: background-color 0.15s ease;
+}
+
+.memberItem:hover {
+    background-color: #f1f5f9;
+}
+
+.memberInfo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
 .memberName {
-    cursor: help;
-    text-decoration: none;
-    color: #333333;
+    font-size: 16px;
+    font-weight: 600;
+    color: #0f172a;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.memberName:hover {
+    color: #2563eb;
+    text-decoration: underline;
+}
+
+.memberEmail {
+    font-size: 14px;
+    color: #64748b;
+}
+
+.roleBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 13.5px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    line-height: 1.25;
+}
+
+.roleIcon {
+    font-size: 15px;
+    line-height: 1;
 }
 
 .memberActions {
@@ -34,29 +92,33 @@
 
 .iconButton {
     position: relative;
-    padding: 6px;
+    padding: 8px;
     background: none;
     border: none;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
-    transition: background-color 0.2s ease;
+    border-radius: 8px;
+    transition: all 0.15s ease;
 }
 
 .iconButton:hover {
-    background-color: #E6ECF4;
+    background-color: #e2e8f0;
 }
 
 .iconButton svg {
-    font-size: 18px;
-    color: #333333;
-    transition: color 0.2s ease-in-out;
+    font-size: 17px;
+    color: #475569;
+    transition: color 0.15s ease-in-out;
 }
 
 .iconButton:hover svg {
-    color: #4A90E2;
+    color: #2563eb;
+}
+
+.dangerButton:hover svg {
+    color: #ef4444;
 }
 
 .iconButton:hover .tooltip {
@@ -71,12 +133,13 @@
     bottom: 125%;
     left: 50%;
     transform: translateX(-50%);
-    background-color: #333333;
+    background-color: #1e293b;
     color: white;
-    padding: 5px 8px;
-    border-radius: 4px;
+    padding: 5px 9px;
+    border-radius: 6px;
     font-size: 12px;
     white-space: nowrap;
     z-index: 10;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
 }

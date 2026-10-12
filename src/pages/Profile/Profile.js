@@ -1,19 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { fetchUpdateProfile, selectIsAuth, selectAuthData } from '../../redux/slices/auth';
 import styles from './Profile.module.css';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import MyButton from '../../components/ui/button/MyButton';
-import { FaCamera } from 'react-icons/fa';
+import { FaArrowLeft, FaCamera } from 'react-icons/fa';
 
 const BACKEND_URL = 'http://localhost:5000';
 
 const Profile = () => {
     const isAuth = useSelector(selectIsAuth);
     const userData = useSelector(selectAuthData);
+    const navigate = useNavigate();
     const dispatch = useDispatch();
 
     const [fullName, setFullName] = useState('');
@@ -101,9 +102,12 @@ const Profile = () => {
 
     return (
         <Paper classes={{ root: styles.root }}>
-            <Link to="/" className={styles.backLink}>
-                <MyButton>Назад</MyButton>
-            </Link>
+            <MyButton
+                className={styles.backLink}
+                onClick={() => navigate('/')}
+            >
+                <FaArrowLeft /> Назад
+            </MyButton>
             <Typography classes={{ root: styles.title }} variant="h5">
                 Профіль користувача
             </Typography>

@@ -1,56 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import MyButton from '../ui/button/MyButton';
 import MyModal from '../ui/modal/MyModal';
-import MyCheckboxList from '../ui/checkbox/MyCheckboxList';
 import styles from './EditPermissionsForm.module.css';
 import { fetchUpdatePermissions, fetchGroups } from '../../redux/slices/groups';
-import { FaPencilAlt } from 'react-icons/fa';
+import { FaUserShield, FaCheck } from 'react-icons/fa';
+import { useToast } from '../../context/ToastContext';
+import { ROLE_CONFIG } from '../../utils/roleUtils';
 
-const EditPermissionsForm = ({ groupId, memberId, initialPermissions, updatePermissionsState }) => {
+const EditPermissionsForm = ({ groupId, memberId, memberName, initialPermissions = {}, updatePermissionsState }) => {
     const dispatch = useDispatch();
+    const { showToast } = useToast();
     const [permissionsModalVisible, setPermissionsModalVisible] = useState(false);
-    const [permissions, setPermissions] = useState(initialPermissions);
 
-    const permissionOptions = [
-        { value: 'canAddTasks', name: 'Додавати задачі' },
-        { value: 'canEditTasks', name: 'Редагувати задачі' },
-        { value: 'canDeleteTasks', name: 'Видаляти задачі' },
+    const initialRole = initialPermissions?.role || (
+        initialPermissions?.canDeleteTasks && initialPermissions?.canEditTasks ? 'admin' :
+        initialPermissions?.canAddTasks ? 'member' : 'viewer'
+    );
+
+    const [selectedRole, setSelectedRole] = useState(initialRole);
+
+    useEffect(() => {
+        if (initialPermissions?.role) {
+            setSelectedRole(initialPermissions.role);
+        }
+    }, [initialPermissions]);
+
+    const rolesList = [
+        ROLE_CONFIG.admin,
+        ROLE_CONFIG.member,
+        ROLE_CONFIG.viewer,
     ];
-
-    const getSelectedPermissions = () => {
-        const selected = [];
-        if (permissions.canAddTasks) selected.push('canAddTasks');
-        if (permissions.canEditTasks) selected.push('canEditTasks');
-        if (permissions.canDeleteTasks) selected.push('canDeleteTasks');
-        return selected;
-    };
-
-    const handlePermissionChange = (selectedPermissions) => {
-        const updatedPermissions = {
-            canAddTasks: selectedPermissions.includes('canAddTasks'),
-            canEditTasks: selectedPermissions.includes('canEditTasks'),
-            canDeleteTasks: selectedPermissions.includes('canDeleteTasks'),
-        };
-        setPermissions(updatedPermissions);
-    };
 
     const savePermissions = () => {
         dispatch(fetchUpdatePermissions({
             groupId,
             userId: memberId,
-            canAddTasks: permissions.canAddTasks,
-            canEditTasks: permissions.canEditTasks,
-            canDeleteTasks: permissions.canDeleteTasks,
+            role: selectedRole,
         }))
-            .then(({ payload }) => {
-                alert('Дозволи успішно оновлено');
+            .then(() => {
+                showToast(`Роль учасника змінено на "${ROLE_CONFIG[selectedRole].title}"`, 'success');
                 dispatch(fetchGroups());
-                updatePermissionsState(memberId, permissions);
+                if (updatePermissionsState) {
+                    updatePermissionsState(memberId, {
+                        ...initialPermissions,
+                        role: selectedRole,
+                    });
+                }
                 setPermissionsModalVisible(false);
             })
             .catch((error) => {
-                alert(error.response?.data?.message || 'Помилка при оновленні дозволів');
+                showToast(error.response?.data?.message || 'Помилка при оновленні ролі', 'error');
             });
     };
 
@@ -59,23 +59,58 @@ const EditPermissionsForm = ({ groupId, memberId, initialPermissions, updatePerm
             <button
                 onClick={() => setPermissionsModalVisible(true)}
                 className={styles.editPermissionsButton}
-                aria-label="Редагувати дозволи"
+                aria-label="Керування роллю"
             >
-                <FaPencilAlt />
-                <span className={styles.tooltip}>Редагувати дозволи</span>
+                <FaUserShield />
+                <span className={styles.tooltip}>Керування роллю</span>
             </button>
             <MyModal visible={permissionsModalVisible} setVisible={setPermissionsModalVisible}>
                 <div className={styles.permissionsForm}>
-                    <h3>Редагувати дозволи</h3>
-                    <MyCheckboxList
-                        options={permissionOptions}
-                        value={getSelectedPermissions()}
-                        onChange={handlePermissionChange}
-                        label="Дозволи:"
-                    />
-                    <MyButton onClick={savePermissions}>
-                        Зберегти
-                    </MyButton>
+                    <h3 className={styles.formTitle}>
+                        Керування роллю {memberName ? `(${memberName})` : ''}
+                    </h3>
+                    <p className={styles.formSubtitle}>
+                        Оберіть рівень доступу для учасника в проєкті:
+                    </p>
+
+                    <div className={styles.roleCardsContainer}>
+                        {rolesList.map((role) => {
+                            const isSelected = selectedRole === role.id;
+                            return (
+                                <div
+                                    key={role.id}
+                                    className={`${styles.roleCard} ${isSelected ? styles.roleCardActive : ''}`}
+                                    onClick={() => setSelectedRole(role.id)}
+                                >
+                                    <div className={styles.roleCardHeader}>
+                                        <span className={styles.roleCardIcon}>{role.icon}</span>
+                                        <span className={styles.roleCardTitle} style={{ color: role.color }}>
+                                            {role.title}
+                                        </span>
+                                        {isSelected && (
+                                            <span className={styles.selectedBadge}>
+                                                <FaCheck />
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className={styles.roleCardDescription}>{role.description}</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className={styles.formActions}>
+                        <MyButton
+                            type="button"
+                            onClick={() => setPermissionsModalVisible(false)}
+                            className={styles.cancelBtn}
+                        >
+                            Скасувати
+                        </MyButton>
+                        <MyButton onClick={savePermissions} className={styles.saveBtn}>
+                            Зберегти роль
+                        </MyButton>
+                    </div>
                 </div>
             </MyModal>
         </>

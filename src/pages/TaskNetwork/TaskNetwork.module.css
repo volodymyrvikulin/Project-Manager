@@ -15,6 +15,7 @@
     align-items: center;
     justify-content: center;
     min-height: 120px;
+    box-sizing: border-box;
 }
 
 .node:hover {

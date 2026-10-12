@@ -31,6 +31,19 @@ export const fetchGenerateTasks = createAsyncThunk('groups/fetchGenerateTasks', 
     return data.tasks;
 });
 
+export const fetchAnalyzeRisks = createAsyncThunk('groups/fetchAnalyzeRisks', async ({ groupId }) => {
+    const { data } = await axios.post(`/ai/groups/${groupId}/risks`);
+    return { groupId, analysis: data.analysis };
+});
+
+export const fetchDecomposeTask = createAsyncThunk(
+    'groups/fetchDecomposeTask',
+    async ({ groupId, taskId, prompt }) => {
+        const { data } = await axios.post(`/ai/groups/${groupId}/tasks/${taskId}/decompose`, { prompt });
+        return data;
+    }
+);
+
 export const fetchDeleteTask = createAsyncThunk('groups/fetchDeleteTask', async ({ groupId, taskId }) => {
     const { data } = await axios.delete(`/tasks/${groupId}/${taskId}/`);
     return data;
@@ -51,8 +64,8 @@ export const fetchRemoveUser = createAsyncThunk('groups/fetchRemoveUser', async 
     return { groupId, userId, message: data.message };
 });
 
-export const fetchUpdatePermissions = createAsyncThunk('groups/fetchUpdatePermissions', async ({ groupId, userId, canAddTasks, canEditTasks, canDeleteTasks }) => {
-    const { data } = await axios.patch(`/groups/${groupId}/permissions`, { userId, canAddTasks, canEditTasks, canDeleteTasks });
+export const fetchUpdatePermissions = createAsyncThunk('groups/fetchUpdatePermissions', async ({ groupId, userId, role }) => {
+    const { data } = await axios.patch(`/groups/${groupId}/permissions`, { userId, role });
     return { groupId, updatedGroup: data };
 });
 
@@ -145,6 +158,13 @@ const groupsSlice = createSlice({
                 state.groups.items = state.groups.items.map((g) =>
                     g._id === groupId ? { ...g, ...updatedGroup } : g
                 );
+            })
+            .addCase(fetchAnalyzeRisks.fulfilled, (state, action) => {
+                const { groupId, analysis } = action.payload;
+                if (!state.riskAnalysis) {
+                    state.riskAnalysis = {};
+                }
+                state.riskAnalysis[groupId] = analysis;
             });
     },
 });

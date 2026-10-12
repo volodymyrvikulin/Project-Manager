@@ -11,7 +11,12 @@ import { selectIsAuth, selectAuthData } from '../../redux/slices/auth';
 import InviteUserForm from '../InviteUserForm/InviteUserForm';
 import EditGroupForm from '../EditGroupForm/EditGroupForm';
 import MembersList from '../MembersList/MembersList';
-import { FaPlus, FaMagic, FaTrash, FaChartBar, FaPencilAlt, FaUserPlus } from 'react-icons/fa';
+import AiRiskModal from '../AiRiskModal/AiRiskModal';
+import DecomposeTaskModal from '../DecomposeTaskModal/DecomposeTaskModal';
+import ConfirmModal from '../ConfirmModal/ConfirmModal';
+import { FaPlus, FaMagic, FaTrash, FaChartBar, FaPencilAlt, FaUserPlus, FaShieldAlt, FaCalendarAlt, FaProjectDiagram } from 'react-icons/fa';
+import { useToast } from '../../context/ToastContext';
+import { getMemberRole, getRolePermissions } from '../../utils/roleUtils';
 
 const Group = ({
     group,
@@ -20,17 +25,23 @@ const Group = ({
     const { _id: groupId, title: groupTitle, tasks, members = [], user: ownerId, permissions = [] } = group;
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const { showToast } = useToast();
     const isAuth = useSelector(selectIsAuth);
     const authData = useSelector(selectAuthData);
     const isOwner = authData && ownerId && authData._id === ownerId.toString();
 
-    const userPermissions = permissions.find(perm => perm.userId === authData?._id) || {};
-    const canAddTasks = isOwner || userPermissions.canAddTasks;
-    const canEditTasks = isOwner || userPermissions.canEditTasks;
-    const canDeleteTasks = isOwner || userPermissions.canDeleteTasks;
+    const currentUserRole = getMemberRole(authData?._id, ownerId, permissions);
+    const rolePermissions = getRolePermissions(currentUserRole);
+
+    const canAddTasks = isOwner || rolePermissions.canAddTasks;
+    const canEditAllTasks = isOwner || rolePermissions.canEditTasks;
+    const canDeleteTasks = isOwner || rolePermissions.canDeleteTasks;
+    const canChangeStatus = isOwner || rolePermissions.canChangeStatus;
+    const canInviteUsers = isOwner || rolePermissions.canInviteUsers;
 
     const [edit, setEdit] = useState(null);
     const [value, setValue] = useState('');
+    const [description, setDescription] = useState('');
     const [duration, setDuration] = useState(1);
     const [optimisticDuration, setOptimisticDuration] = useState(1);
     const [mostLikelyDuration, setMostLikelyDuration] = useState(1);
@@ -41,17 +52,26 @@ const Group = ({
     const [assignedTo, setAssignedTo] = useState('');
     const [modalTaskVisible, setModalTaskVisible] = useState(false);
     const [modalGenerateTasksVisible, setModalGenerateTasksVisible] = useState(false);
+    const [modalAiRiskVisible, setModalAiRiskVisible] = useState(false);
+    const [decomposingTask, setDecomposingTask] = useState(null);
     const [modalGroupEditVisible, setModalGroupEditVisible] = useState(false);
     const [modalInviteVisible, setModalInviteVisible] = useState(false);
     const [inviteEmail, setInviteEmail] = useState('');
     const [editTitle, setEditTitle] = useState(groupTitle);
+    const [confirmModal, setConfirmModal] = useState({
+        visible: false,
+        title: '',
+        message: '',
+        confirmText: 'Підтвердити',
+        cancelText: 'Скасувати',
+        danger: true,
+        onConfirm: null,
+    });
     const [permissionsState, setPermissionsState] = useState(
         members.reduce((acc, member) => ({
             ...acc,
             [member._id]: {
-                canAddTasks: permissions.find(p => p.userId === member._id)?.canAddTasks || false,
-                canEditTasks: permissions.find(p => p.userId === member._id)?.canEditTasks || false,
-                canDeleteTasks: permissions.find(p => p.userId === member._id)?.canDeleteTasks || false,
+                role: getMemberRole(member._id, ownerId, permissions),
             },
         }), {})
     );
@@ -125,6 +145,7 @@ const Group = ({
     const editTask = (task) => {
         setEdit(task._id);
         setValue(task.title);
+        setDescription(task.description || '');
         setDuration(task.duration || 1);
         setEstimateRisk(Boolean(task.pert && Number(task.pert.standardDeviation) > 0));
         setOptimisticDuration(task.pert?.optimistic || task.duration || 1);
@@ -136,27 +157,36 @@ const Group = ({
     };
 
     const saveTask = (task) => {
+        const durationNum = Math.max(1, Number(duration) || 1);
         const updatedTask = {
             ...task,
             title: value,
-            duration: Number(duration),
-            ...(estimateRisk && (() => {
-                const optimistic = Math.max(1, Number(optimisticDuration) || Number(duration) || 1);
-                const mostLikely = Math.max(optimistic, Number(mostLikelyDuration) || optimistic);
-                const pessimistic = Math.max(mostLikely, Number(pessimisticDuration) || mostLikely);
-                const expected = (optimistic + (4 * mostLikely) + pessimistic) / 6;
-                const standardDeviation = (pessimistic - optimistic) / 6;
-                return {
-                    pert: {
+            description: description ? description.trim() : '',
+            duration: durationNum,
+            pert: estimateRisk
+                ? (() => {
+                    const optimistic = Math.max(1, Number(optimisticDuration) || durationNum);
+                    const mostLikely = Math.max(optimistic, Number(mostLikelyDuration) || optimistic);
+                    const pessimistic = Math.max(mostLikely, Number(pessimisticDuration) || mostLikely);
+                    const expected = (optimistic + (4 * mostLikely) + pessimistic) / 6;
+                    const standardDeviation = (pessimistic - optimistic) / 6;
+                    return {
                         optimistic,
                         mostLikely,
                         pessimistic,
                         expected,
                         standardDeviation,
                         variance: standardDeviation ** 2,
-                    },
-                };
-            })()),
+                    };
+                })()
+                : {
+                    optimistic: durationNum,
+                    mostLikely: durationNum,
+                    pessimistic: durationNum,
+                    expected: durationNum,
+                    standardDeviation: 0,
+                    variance: 0,
+                },
             deadline: deadline ? new Date(deadline).toISOString() : undefined,
             dependencies: dependencies || [],
             assignedTo: assignedTo || null,
@@ -164,6 +194,7 @@ const Group = ({
         const taskId = task._id;
         setEdit(null);
         setValue('');
+        setDescription('');
         setDuration(1);
         setOptimisticDuration(1);
         setMostLikelyDuration(1);
@@ -195,55 +226,85 @@ const Group = ({
     const handleInviteUser = (e) => {
         e.preventDefault();
         if (!inviteEmail) {
-            alert('Введіть електронну адресу');
+            showToast('Введіть електронну адресу', 'error');
             return;
         }
         dispatch(fetchInviteUser({ groupId, email: inviteEmail }))
             .then(({ payload }) => {
-                alert(payload.message);
+                showToast(payload.message || 'Запрошення надіслано!', 'success');
                 setInviteEmail('');
                 setModalInviteVisible(false);
                 dispatch(fetchGroups());
             })
             .catch((error) => {
-                alert(error.response?.data?.message || 'Помилка при надсиланні запрошення');
+                showToast(error.response?.data?.message || 'Помилка при надсиланні запрошення', 'error');
             });
     };
 
     const handleRemoveUser = (userId) => {
-        if (window.confirm('Ви впевнені, що хочете видалити цього користувача з проєкту?')) {
-            dispatch(fetchRemoveUser({ groupId, userId }))
-                .then(({ payload }) => {
-                    alert(payload.message);
-                    dispatch(fetchGroups());
-                    setPermissionsState(prev => {
-                        const newState = { ...prev };
-                        delete newState[userId];
-                        return newState;
+        setConfirmModal({
+            visible: true,
+            title: 'Видалення користувача',
+            message: 'Ви впевнені, що хочете видалити цього користувача з проєкту?',
+            confirmText: 'Видалити',
+            cancelText: 'Скасувати',
+            danger: true,
+            onConfirm: () => {
+                dispatch(fetchRemoveUser({ groupId, userId }))
+                    .then(({ payload }) => {
+                        showToast(payload?.message || 'Користувача видалено з проєкту', 'info');
+                        dispatch(fetchGroups());
+                        setPermissionsState(prev => {
+                            const newState = { ...prev };
+                            delete newState[userId];
+                            return newState;
+                        });
+                    })
+                    .catch((error) => {
+                        showToast(error.response?.data?.message || 'Помилка при видаленні користувача', 'error');
                     });
-                })
-                .catch((error) => {
-                    alert(error.response?.data?.message || 'Помилка при видаленні користувача');
-                });
-        }
+            },
+        });
     };
 
     const handleLeaveGroup = (userId) => {
-        if (window.confirm('Ви впевнені, що хочете вийти з цього проєкту?')) {
-            dispatch(fetchRemoveUser({ groupId, userId }))
-                .then(({ payload }) => {
-                    alert(payload.message);
-                    dispatch(fetchGroups());
-                    setPermissionsState(prev => {
-                        const newState = { ...prev };
-                        delete newState[userId];
-                        return newState;
+        setConfirmModal({
+            visible: true,
+            title: 'Вихід з проєкту',
+            message: 'Ви впевнені, що хочете вийти з цього проєкту?',
+            confirmText: 'Вийти',
+            cancelText: 'Скасувати',
+            danger: true,
+            onConfirm: () => {
+                dispatch(fetchRemoveUser({ groupId, userId }))
+                    .then(({ payload }) => {
+                        showToast(payload?.message || 'Ви вийшли з проєкту', 'info');
+                        dispatch(fetchGroups());
+                        setPermissionsState(prev => {
+                            const newState = { ...prev };
+                            delete newState[userId];
+                            return newState;
+                        });
+                    })
+                    .catch((error) => {
+                        showToast(error.response?.data?.message || 'Помилка при виході з проєкту', 'error');
                     });
-                })
-                .catch((error) => {
-                    alert(error.response?.data?.message || 'Помилка при виході з проєкту');
-                });
-        }
+            },
+        });
+    };
+
+    const handleConfirmRemoveGroup = () => {
+        setConfirmModal({
+            visible: true,
+            title: 'Видалення проєкту',
+            message: `Ви впевнені, що хочете видалити проєкт "${groupTitle}"?`,
+            confirmText: 'Видалити',
+            cancelText: 'Скасувати',
+            danger: true,
+            onConfirm: () => {
+                removeGroup(group);
+            },
+        });
     };
 
     const updatePermissionsState = (memberId, updatedPermissions) => {
@@ -253,7 +314,8 @@ const Group = ({
         }));
     };
 
-    const taskOptions = tasks
+    const allProjectTasks = group.allTasks || tasks;
+    const taskOptions = allProjectTasks
         .filter(t => t._id !== (edit || ''))
         .map(task => ({
             value: task._id,
@@ -266,7 +328,14 @@ const Group = ({
 
     return (
         <div className={styles.groupContainer}>
-            <h1 className={styles.groupHeader}>{groupTitle}</h1>
+            <div className={styles.groupTitleRow}>
+                <h1 className={styles.groupHeader}>{groupTitle}</h1>
+                {group.totalTasksCount !== undefined && group.totalTasksCount !== tasks.length && (
+                    <span className={styles.filteredBadge}>
+                        Знайдено {tasks.length} з {group.totalTasksCount} задач
+                    </span>
+                )}
+            </div>
             <div className={styles.groupHeaderWrapper}>
                 <div className={styles.actions}>
                     {canAddTasks && (
@@ -282,24 +351,38 @@ const Group = ({
                         </>
                     )}
                     {isOwner && (
-                        <>
-                            <button onClick={() => removeGroup(group)} className={styles.iconButton} aria-label="Видалити проєкт">
-                                <FaTrash />
-                                <span className={styles.tooltip}>Видалити проєкт</span>
-                            </button>
-                            <button onClick={() => setModalInviteVisible(true)} className={styles.iconButton} aria-label="Запросити користувача">
-                                <FaUserPlus />
-                                <span className={styles.tooltip}>Запросити користувача</span>
-                            </button>
-                            <button onClick={() => setModalGroupEditVisible(true)} className={styles.iconButton} aria-label="Редагувати проєкт">
-                                <FaPencilAlt />
-                                <span className={styles.tooltip}>Редагувати проєкт</span>
-                            </button>
-                        </>
+                        <button onClick={handleConfirmRemoveGroup} className={styles.iconButton} aria-label="Видалити проєкт">
+                            <FaTrash />
+                            <span className={styles.tooltip}>Видалити проєкт</span>
+                        </button>
+                    )}
+                    {canInviteUsers && (
+                        <button onClick={() => setModalInviteVisible(true)} className={styles.iconButton} aria-label="Запросити користувача">
+                            <FaUserPlus />
+                            <span className={styles.tooltip}>Запросити користувача</span>
+                        </button>
+                    )}
+                    {isOwner && (
+                        <button onClick={() => setModalGroupEditVisible(true)} className={styles.iconButton} aria-label="Редагувати проєкт">
+                            <FaPencilAlt />
+                            <span className={styles.tooltip}>Редагувати проєкт</span>
+                        </button>
                     )}
                     <button onClick={() => checkCompleted(group)} className={styles.iconButton} aria-label="Статистика проєкту">
                         <FaChartBar />
                         <span className={styles.tooltip}>Статистика проєкту</span>
+                    </button>
+                    <button onClick={() => navigate(`/gantt?group=${group._id}`)} className={styles.iconButton} aria-label="Діаграма Ганта проєкту">
+                        <FaCalendarAlt />
+                        <span className={styles.tooltip}>Діаграма Ганта проєкту</span>
+                    </button>
+                    <button onClick={() => navigate(`/network?group=${group._id}`)} className={styles.iconButton} aria-label="Мережевий графік проєкту">
+                        <FaProjectDiagram />
+                        <span className={styles.tooltip}>Мережевий графік проєкту</span>
+                    </button>
+                    <button onClick={() => setModalAiRiskVisible(true)} className={styles.iconButton} aria-label="AI-аналіз ризиків">
+                        <FaShieldAlt />
+                        <span className={styles.tooltip}>AI-аналіз ризиків</span>
                     </button>
                 </div>
             </div>
@@ -309,6 +392,18 @@ const Group = ({
             <MyModal visible={modalGenerateTasksVisible} setVisible={setModalGenerateTasksVisible}>
                 <GenerateTasksForm id={group._id} setVisible={setModalGenerateTasksVisible} />
             </MyModal>
+            <AiRiskModal
+                visible={modalAiRiskVisible}
+                setVisible={setModalAiRiskVisible}
+                groupId={group._id}
+                groupTitle={groupTitle}
+            />
+            <DecomposeTaskModal
+                visible={Boolean(decomposingTask)}
+                setVisible={(open) => !open && setDecomposingTask(null)}
+                task={decomposingTask}
+                groupId={group._id}
+            />
             <MyModal visible={modalInviteVisible} setVisible={setModalInviteVisible}>
                 <InviteUserForm
                     visible={modalInviteVisible}
@@ -326,9 +421,21 @@ const Group = ({
                 editTitle={editTitle}
                 setEditTitle={setEditTitle}
             />
+            <ConfirmModal
+                visible={confirmModal.visible}
+                setVisible={(vis) => setConfirmModal(prev => ({ ...prev, visible: vis }))}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                cancelText={confirmModal.cancelText}
+                danger={confirmModal.danger}
+                onConfirm={confirmModal.onConfirm}
+            />
             <MembersList
                 members={members}
                 isOwner={isOwner}
+                ownerId={ownerId}
+                permissions={permissions}
                 authData={authData}
                 handleRemoveUser={handleRemoveUser}
                 handleLeaveGroup={handleLeaveGroup}
@@ -348,6 +455,8 @@ const Group = ({
                             editTask={editTask}
                             value={value}
                             setValue={setValue}
+                            description={description}
+                            setDescription={setDescription}
                             duration={duration}
                             setDuration={setDuration}
                             optimisticDuration={optimisticDuration}
@@ -365,14 +474,17 @@ const Group = ({
                             assignedTo={assignedTo}
                             setAssignedTo={setAssignedTo}
                             taskOptions={taskOptions}
-                            tasks={tasks}
+                            tasks={allProjectTasks}
                             members={members}
                             saveTask={saveTask}
                             number={index + 1}
                             task={task}
                             key={task._id}
-                            canEditTasks={canEditTasks}
+                            canEditTasks={canEditAllTasks || Boolean(task.assignedTo && authData && task.assignedTo === authData._id)}
                             canDeleteTasks={canDeleteTasks}
+                            canAddTasks={canAddTasks}
+                            canChangeStatus={canChangeStatus}
+                            onDecompose={setDecomposingTask}
                         />
                     ))}
                 </div>

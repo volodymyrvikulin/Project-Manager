@@ -77,6 +77,25 @@
   border-radius: 4px;
 }
 
+.taskDescriptionBlock {
+  font-size: 15px;
+  line-height: 1.45;
+  color: #334155;
+  background-color: #ffffff;
+  border-left: 3px solid #3b82f6;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-radius: 0 4px 4px 0;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.taskDescriptionLabel {
+  font-weight: 600;
+  color: #1e293b;
+  margin-right: 6px;
+}
+
 .detailLarge {
   font-size: 16px;
   margin-top: 2px;

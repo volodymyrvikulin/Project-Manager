@@ -1,8 +1,8 @@
 .container {
   padding: 20px;
-  margin-top: 30px;
-  background-color: #f5f7fa;
-  max-width: 1200px;
+  margin-top: 20px;
+  background-color: #f8fafc;
+  max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
 }
@@ -10,14 +10,9 @@
 .buttonWrapper {
   display: flex;
   gap: 10px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   justify-content: flex-start;
   align-items: center;
-}
-
-.buttonGroup {
-  display: flex;
-  gap: 10px;
 }
 
 .buttonGroupLeft {
@@ -32,30 +27,173 @@
 .title {
   text-align: center;
   margin-bottom: 20px;
-  font-size: 24px;
-  color: #333333;
+  font-size: 26px;
+  color: #1e293b;
+  font-weight: 700;
 }
 
-.graphWrapper {
-  height: 600px;
-  border: 1px solid #d3dde8;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+.controlsBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: #ffffff;
+  padding: 14px 20px;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.filterGroup {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filterLabel {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 15px;
+}
+
+.projectSelect {
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e293b;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  background-color: #f8fafc;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 220px;
+  max-width: 320px;
+}
+
+.projectSelect:focus {
+  border-color: #3b82f6;
   background-color: #ffffff;
-  overflow: hidden;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.resetFilterButton {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.resetFilterButton:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.actionButtons {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .resetButton {
-  margin: 0 auto;
-  display: block;
-  background-color: #4a90e2;
+  background-color: #3b82f6;
   color: white;
-  border: 1px solid #4a90e2;
+  border: 1px solid #3b82f6;
   border-radius: 6px;
   padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
   transition: background-color 0.2s ease;
 }
 
 .resetButton:hover {
-  background-color: #357abd;
+  background-color: #2563eb;
+}
+
+.ganttLinkButton {
+  background-color: #ffffff;
+  color: #334155;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.ganttLinkButton:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: 13px;
+  color: #475569;
+  flex-wrap: wrap;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legendSwatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+.legendNormal {
+  background-color: #90EE90;
+}
+
+.legendPriority {
+  background-color: #FFCC99;
+}
+
+.legendMissed {
+  background-color: #FF9999;
+}
+
+.legendEnd {
+  background-color: #D3D3D3;
+}
+
+.legendMarker {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+
+.earlyMarker {
+  background-color: #66CC66;
+}
+
+.lateMarker {
+  background-color: #FF6666;
+}
+
+.graphWrapper {
+  height: 650px;
+  border: 1px solid #d3dde8;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background-color: #ffffff;
+  overflow: hidden;
 }

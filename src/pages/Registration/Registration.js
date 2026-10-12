@@ -9,11 +9,13 @@ import Paper from '@mui/material/Paper';
 import styles from './Registration.module.css';
 import MyButton from '../../components/ui/button/MyButton';
 import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useToast } from '../../context/ToastContext';
 
 const Registration = () => {
     const isAuth = useSelector(selectIsAuth);
     const authError = useSelector(selectAuthError);
     const dispatch = useDispatch();
+    const { showToast } = useToast();
     const [showPassword, setShowPassword] = useState(false);
 
     const { 
@@ -31,9 +33,13 @@ const Registration = () => {
 
     const onSubmit = async (values) => {
         const data = await dispatch(fetchRegister(values));
-        if (!data.payload) return alert('Не вдалося зареєструватися');
+        if (!data.payload) {
+            showToast('Не вдалося зареєструватися', 'error');
+            return;
+        }
         if ('token' in data.payload) {
             window.localStorage.setItem('token', data.payload.token);
+            showToast('Успішна реєстрація!', 'success');
         }
     };
 

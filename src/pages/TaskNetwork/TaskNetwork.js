@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useState } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectGroups, fetchGroups, setNodePositions, resetNodePositions } from '../../redux/slices/groups';
@@ -7,7 +7,7 @@ import TaskNetworkInner from '../../components/TaskNetworkInner/TaskNetworkInner
 import { calculateTimings } from '../../utils/ganttUtils';
 import styles from '../../pages/TaskNetwork/TaskNetwork.module.css';
 import { selectIsAuth } from '../../redux/slices/auth';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 const createDagreGraph = () => {
     const graph = new dagre.graphlib.Graph();
@@ -19,12 +19,14 @@ const getLayoutedElementsForGroup = (nodes, edges) => {
     const dagreGraph = createDagreGraph();
     dagreGraph.setGraph({ 
         rankdir: 'LR',
-        nodesep: 100,
-        ranksep: 150,
+        nodesep: 80,
+        ranksep: 160,
     });
 
     nodes.forEach((node) => {
-        dagreGraph.setNode(node.id, { width: 200, height: 120 });
+        const width = node.width || 200;
+        const height = node.height || 140;
+        dagreGraph.setNode(node.id, { width, height });
     });
 
     edges.forEach((edge) => {
@@ -52,11 +54,13 @@ const getLayoutedElementsForGroup = (nodes, edges) => {
 
     const layoutedNodes = nodes.map((node) => {
         const nodeWithPosition = dagreGraph.node(node.id);
+        const width = node.width || 200;
+        const height = node.height || 140;
         return {
             ...node,
             position: {
-                x: nodeWithPosition.x - 100,
-                y: nodeWithPosition.y - 60,
+                x: nodeWithPosition.x - (width / 2),
+                y: nodeWithPosition.y - (height / 2),
             },
         };
     });
@@ -65,14 +69,29 @@ const getLayoutedElementsForGroup = (nodes, edges) => {
 };
 
 const TaskNetwork = () => {
-    const isAuth = useSelector(selectIsAuth)
+    const isAuth = useSelector(selectIsAuth);
     const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const { groupId: routeGroupId } = useParams();
+    const [searchParams] = useSearchParams();
     const { groups, nodePositions } = useSelector(selectGroups);
-    const [ganttData, setGanttData] = useState([]);
+
+    const selectedGroupId = routeGroupId || searchParams.get('group') || 'all';
 
     useEffect(() => {
         dispatch(fetchGroups());
     }, [dispatch]);
+
+    const filteredGroups = useMemo(() => {
+        if (!groups.items) return [];
+        if (selectedGroupId === 'all') return groups.items;
+        return groups.items.filter((g) => g._id === selectedGroupId);
+    }, [groups.items, selectedGroupId]);
+
+    const selectedGroup = useMemo(() => {
+        if (selectedGroupId === 'all') return null;
+        return groups.items.find((g) => g._id === selectedGroupId) || null;
+    }, [groups.items, selectedGroupId]);
 
     const initialData = useMemo(() => {
         if (!groups.items || !groups.items.length) {
@@ -91,61 +110,100 @@ const TaskNetwork = () => {
             };
         }
 
+        if (selectedGroupId !== 'all' && filteredGroups.length === 0) {
+            return {
+                initialNodes: [
+                    {
+                        id: 'not-found',
+                        type: 'customNode',
+                        data: {
+                            label: (
+                                <div>
+                                    <strong>Проєкт не знайдено або він був видалений</strong>
+                                </div>
+                            ),
+                        },
+                        position: { x: 100, y: 100 },
+                        className: styles.node,
+                    }
+                ],
+                initialEdges: [],
+                handleResetPositions: () => dispatch(resetNodePositions()),
+            };
+        }
+
         let allNodes = [];
         let allEdges = [];
-        let allTasksWithTimings = [];
         let groupOffsetY = 0;
 
-        groups.items.forEach((group) => {
+        filteredGroups.forEach((group) => {
+            const rawTasks = group.tasks || [];
+            if (rawTasks.length === 0) return;
+
             const groupNodes = [];
             const groupEdges = [];
 
-            const tasksWithTimings = calculateTimings(group.tasks || [], group.createdAt).map(task => ({
+            const tasksWithTimings = calculateTimings(rawTasks, group.createdAt).map(task => ({
                 ...task,
                 groupId: group._id,
                 members: group.members || [],
             }));
 
+            const existingTaskIds = new Set(tasksWithTimings.map(t => t._id));
+
             tasksWithTimings.forEach((task) => {
-                const savedPosition = nodePositions[task._id] || { x: 0, y: 0 };
+                const savedPosition = nodePositions[task._id];
                 const nodeClass = task.deadlineMissed
                     ? `${styles.node} ${styles.nodeMissedDeadline}`
                     : task.priority
                     ? `${styles.node} ${styles.nodePriority}`
                     : `${styles.node} ${styles.nodeNormal}`;
 
+                const startDate = task.earliestStartDate instanceof Date ? task.earliestStartDate : new Date(task.earliestStartDate);
+                const finishDate = task.earliestFinishDate instanceof Date ? task.earliestFinishDate : new Date(task.earliestFinishDate);
+                const latestStart = task.latestStartDate instanceof Date ? task.latestStartDate : new Date(task.latestStartDate);
+                const latestFinish = task.latestFinishDate instanceof Date ? task.latestFinishDate : new Date(task.latestFinishDate);
+
+                const titleToDisplay = `${task.title}${selectedGroupId === 'all' ? ` (${group.title})` : ''}`;
+                const titleLines = Math.max(1, Math.ceil(titleToDisplay.length / 20));
+                const estimatedNodeHeight = Math.max(130, 110 + titleLines * 20);
+
                 groupNodes.push({
                     id: task._id,
                     type: 'customNode',
+                    width: 200,
+                    height: estimatedNodeHeight,
                     data: {
                         label: (
                             <div>
-                                <strong>{task.title} ({group.title})</strong><br />
-                                Тривалість: {task.duration} дн.<br />
+                                <strong>{task.title}{selectedGroupId === 'all' ? ` (${group.title})` : ''}</strong><br />
+                                <span>Тривалість: {task.duration} дн.</span><br />
                                 <div className={styles.termsWrapper}>
                                     <span className={styles.earlyTermMarker}></span>
-                                    {task.earliestStartDate.toLocaleDateString()} – {task.earliestFinishDate.toLocaleDateString()}
+                                    {startDate.toLocaleDateString()} – {finishDate.toLocaleDateString()}
                                 </div>
                                 <div className={styles.termsWrapper}>
                                     <span className={styles.lateTermMarker}></span>
-                                    {task.latestStartDate.toLocaleDateString()} – {task.latestFinishDate.toLocaleDateString()}
+                                    {latestStart.toLocaleDateString()} – {latestFinish.toLocaleDateString()}
                                 </div>
                             </div>
                         ),
                     },
-                    position: savedPosition,
+                    position: savedPosition || { x: 0, y: 0 },
                     className: nodeClass,
                 });
 
                 if (task.dependencies && task.dependencies.length > 0) {
                     task.dependencies.forEach((depId) => {
-                        groupEdges.push({
-                            id: `e-${depId}-${task._id}`,
-                            source: depId,
-                            target: task._id,
-                            animated: true,
-                            style: { stroke: '#777', strokeWidth: 2 },
-                        });
+                        if (existingTaskIds.has(depId)) {
+                            groupEdges.push({
+                                id: `e-${depId}-${task._id}`,
+                                source: depId,
+                                target: task._id,
+                                animated: true,
+                                style: { stroke: '#777', strokeWidth: 2 },
+                            });
+                        }
                     });
                 }
             });
@@ -159,10 +217,12 @@ const TaskNetwork = () => {
                 groupNodes.push({
                     id: endNodeId,
                     type: 'customNode',
+                    width: 160,
+                    height: 80,
                     data: {
                         label: (
                             <div>
-                                <strong>Кінець ({group.title})</strong>
+                                <strong>{selectedGroupId === 'all' ? `Кінець (${group.title})` : 'Кінець проєкту'}</strong>
                             </div>
                         ),
                     },
@@ -183,7 +243,7 @@ const TaskNetwork = () => {
 
             const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElementsForGroup(groupNodes, groupEdges);
 
-            const maxY = Math.max(...layoutedNodes.map(node => node.position.y), 0);
+            const maxY = Math.max(...layoutedNodes.map(node => node.position.y + (node.height || 140)), 0);
             const groupHeight = maxY + 50;
 
             const offsetNodes = layoutedNodes.map(node => {
@@ -202,19 +262,42 @@ const TaskNetwork = () => {
 
             allNodes = [...allNodes, ...offsetNodes];
             allEdges = [...allEdges, ...layoutedEdges];
-            allTasksWithTimings = [...allTasksWithTimings, ...tasksWithTimings];
 
             groupOffsetY += groupHeight + 150;
         });
 
-        setGanttData(allTasksWithTimings);
+        if (allNodes.length === 0) {
+            return {
+                initialNodes: [
+                    {
+                        id: 'no-tasks',
+                        type: 'customNode',
+                        data: {
+                            label: (
+                                <div>
+                                    <strong>
+                                        {selectedGroupId !== 'all'
+                                            ? 'У цьому проєкті ще немає створених задач'
+                                            : 'Додайте задачі для відображення графіка'}
+                                    </strong>
+                                </div>
+                            ),
+                        },
+                        position: { x: 100, y: 100 },
+                        className: styles.node,
+                    }
+                ],
+                initialEdges: [],
+                handleResetPositions: () => dispatch(resetNodePositions()),
+            };
+        }
 
         return { 
             initialNodes: allNodes, 
             initialEdges: allEdges, 
             handleResetPositions: () => dispatch(resetNodePositions()) 
         };
-    }, [groups, nodePositions, dispatch]);
+    }, [groups.items, filteredGroups, selectedGroupId, nodePositions, dispatch]);
 
     const handleNodesChange = (changes) => {
         const positionUpdates = {};
@@ -228,6 +311,14 @@ const TaskNetwork = () => {
         }
     };
 
+    const handleSelectGroup = (newGroupId) => {
+        if (newGroupId === 'all') {
+            navigate('/network');
+        } else {
+            navigate(`/network?group=${newGroupId}`);
+        }
+    };
+
     if (!isAuth) {
         return <Navigate to="/login" />;
     }
@@ -237,8 +328,10 @@ const TaskNetwork = () => {
             <TaskNetworkInner 
                 initialData={initialData} 
                 onNodesChangeHandler={handleNodesChange} 
-                ganttData={ganttData} 
-                groups={groups.items}
+                groups={groups.items || []}
+                selectedGroupId={selectedGroupId}
+                onSelectGroup={handleSelectGroup}
+                selectedGroup={selectedGroup}
             />
         </ReactFlowProvider>
     );

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import EditTaskForm from '../EditTaskForm/EditTaskForm';
 import styles from './Task.module.css';
-import { FaStar, FaPencilAlt, FaTrash, FaLock, FaLockOpen, FaInfoCircle, FaCheck } from 'react-icons/fa';
+import { FaStar, FaPencilAlt, FaTrash, FaLock, FaLockOpen, FaInfoCircle, FaCheck, FaSitemap } from 'react-icons/fa';
 
 const Task = (props) => {
     const { task, taskOptions, tasks, members } = props;
@@ -53,6 +53,12 @@ const Task = (props) => {
                 </div>
                 {showDetails && (
                     <div className={styles.taskDetails}>
+                        {task.description && (
+                            <div className={styles.taskDescriptionBlock}>
+                                <strong className={styles.taskDescriptionLabel}>Опис:</strong>
+                                <span>{task.description}</span>
+                            </div>
+                        )}
                         <span className={styles.detailLarge}>Тривалість: {task.duration} дн.</span>
                         <span className={styles.detailLarge}>Дедлайн: {task.deadline ? new Date(task.deadline).toLocaleDateString() : 'Не вказано'}</span>
                         <span className={styles.detailLarge}>Залишилось: {calculateDaysLeft(task.deadline)}</span>
@@ -74,16 +80,26 @@ const Task = (props) => {
                     <span className={styles.tooltip}>Деталі</span>
                 </button>
                 {props.canEditTasks && (
-                    <>
-                        <button onClick={handleEditTask} className={styles.iconButton} aria-label="Редагувати">
-                            <FaPencilAlt />
-                            <span className={styles.tooltip}>Редагувати</span>
-                        </button>
-                        <button onClick={() => props.statusTask(task)} className={styles.iconButton} aria-label={task.status ? 'Виконано' : 'Не виконано'}>
-                            {task.status ? <FaLockOpen /> : <FaLock />}
-                            <span className={styles.tooltip}>{task.status ? 'Виконано' : 'Не виконано'}</span>
-                        </button>
-                    </>
+                    <button onClick={handleEditTask} className={styles.iconButton} aria-label="Редагувати">
+                        <FaPencilAlt />
+                        <span className={styles.tooltip}>Редагувати</span>
+                    </button>
+                )}
+                {props.canChangeStatus && (
+                    <button onClick={() => props.statusTask(task)} className={styles.iconButton} aria-label={task.status ? 'Виконано' : 'Не виконано'}>
+                        {task.status ? <FaLockOpen /> : <FaLock />}
+                        <span className={styles.tooltip}>{task.status ? 'Виконано' : 'Не виконано'}</span>
+                    </button>
+                )}
+                {props.canAddTasks && (
+                    <button
+                        onClick={() => props.onDecompose && props.onDecompose(task)}
+                        className={styles.iconButton}
+                        aria-label="Декомпозувати з ШІ"
+                    >
+                        <FaSitemap />
+                        <span className={styles.tooltip}>Декомпозувати з ШІ</span>
+                    </button>
                 )}
                 {props.canDeleteTasks && (
                     <button onClick={() => props.removeTask(task)} className={styles.iconButton} aria-label="Видалити">
@@ -97,6 +113,8 @@ const Task = (props) => {
                 setVisible={setModalTaskEditVisible}
                 value={props.value}
                 setValue={props.setValue}
+                description={props.description}
+                setDescription={props.setDescription}
                 duration={props.duration}
                 setDuration={props.setDuration}
                 optimisticDuration={props.optimisticDuration}

@@ -6,12 +6,31 @@
   background-color: #f5f7fa;
 }
 
+.groupTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
 .groupHeader {
-  margin-top: 20px;
-  margin-bottom: 20px;
+  margin: 0;
   font-size: 23px;
   text-align: center;
   color: #333333;
+}
+
+.filteredBadge {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0369a1;
+  background-color: #e0f2fe;
+  padding: 3px 12px;
+  border-radius: 9999px;
+  border: 1px solid #bae6fd;
 }
 
 .groupHeaderWrapper {

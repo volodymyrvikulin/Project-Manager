@@ -10,6 +10,7 @@ import styles from './AddTaskForm.module.css';
 
 const AddTaskForm = ({ setVisible, id }) => {
     const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
     const [dependencies, setDependencies] = useState([]);
     const [duration, setDuration] = useState(1);
     const [optimisticDuration, setOptimisticDuration] = useState(1);
@@ -26,33 +27,42 @@ const AddTaskForm = ({ setVisible, id }) => {
         e.preventDefault();
         const newTask = {
             title,
+            description: description ? description.trim() : '',
             status: true,
             priority: false,
             dependencies: dependencies || [],
             duration: Number(duration),
-            ...(estimateRisk && (() => {
-                const optimistic = Math.max(1, Number(optimisticDuration) || Number(duration) || 1);
-                const mostLikely = Math.max(optimistic, Number(mostLikelyDuration) || optimistic);
-                const pessimistic = Math.max(mostLikely, Number(pessimisticDuration) || mostLikely);
-                const expected = (optimistic + (4 * mostLikely) + pessimistic) / 6;
-                const standardDeviation = (pessimistic - optimistic) / 6;
-                return {
-                    pert: {
+            pert: estimateRisk
+                ? (() => {
+                    const optimistic = Math.max(1, Number(optimisticDuration) || Number(duration) || 1);
+                    const mostLikely = Math.max(optimistic, Number(mostLikelyDuration) || optimistic);
+                    const pessimistic = Math.max(mostLikely, Number(pessimisticDuration) || mostLikely);
+                    const expected = (optimistic + (4 * mostLikely) + pessimistic) / 6;
+                    const standardDeviation = (pessimistic - optimistic) / 6;
+                    return {
                         optimistic,
                         mostLikely,
                         pessimistic,
                         expected,
                         standardDeviation,
                         variance: standardDeviation ** 2,
-                    },
-                };
-            })()),
+                    };
+                })()
+                : {
+                    optimistic: Math.max(1, Number(duration) || 1),
+                    mostLikely: Math.max(1, Number(duration) || 1),
+                    pessimistic: Math.max(1, Number(duration) || 1),
+                    expected: Math.max(1, Number(duration) || 1),
+                    standardDeviation: 0,
+                    variance: 0,
+                },
             deadline: deadline ? new Date(deadline).toISOString() : undefined,
             assignedTo: assignedTo || null,
         };
         dispatch(fetchCreateTask({ newTask, id }));
         setVisible(false);
         setTitle('');
+        setDescription('');
         setDependencies([]);
         setDuration(1);
         setOptimisticDuration(1);
@@ -79,6 +89,17 @@ const AddTaskForm = ({ setVisible, id }) => {
                 <div className={styles.field}>
                     <label className={styles.fieldLabel} htmlFor="task-title">Назва задачі</label>
                     <MyInput id="task-title" value={title} onChange={e => setTitle(e.target.value)} type="text" placeholder="Введіть назву задачі" />
+                </div>
+                <div className={styles.field}>
+                    <label className={styles.fieldLabel} htmlFor="task-description">Опис задачі (опціонально)</label>
+                    <textarea
+                        id="task-description"
+                        className={styles.textarea}
+                        value={description}
+                        onChange={e => setDescription(e.target.value)}
+                        placeholder="Введіть опис або деталі задачі"
+                        rows="3"
+                    />
                 </div>
                 <div className={styles.field}>
                     <label className={styles.fieldLabel} htmlFor="task-duration">Базова тривалість (дні)</label>

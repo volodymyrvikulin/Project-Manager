@@ -10,7 +10,9 @@ const MySelect = (props) => {
                 value={props.value}
                 onChange={e => props.onChange(e.target.value)}
             >
-                <option disabled value=''>{props.defaultOption || props.defaultValue}</option>
+                <option disabled={props.disableDefault !== undefined ? props.disableDefault : true} value=''>
+                    {props.defaultOption || props.defaultValue}
+                </option>
                 {props.options.map(option =>
                     <option value={option.value} key={option.value}>
                         {option.name}

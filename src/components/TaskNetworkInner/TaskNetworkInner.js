@@ -7,10 +7,11 @@ import ReactFlow, {
     useEdgesState,
     Handle,
 } from 'reactflow';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import styles from './TaskNetworkInner.module.css';
 import 'reactflow/dist/style.css';
 import MyButton from '../../components/ui/button/MyButton';
+import { FaArrowLeft } from 'react-icons/fa';
 
 const CustomNode = ({ data, className }) => {
     return (
@@ -34,7 +35,15 @@ const nodeTypes = {
     customNode: CustomNode,
 };
 
-const TaskNetworkInner = ({ initialData, onNodesChangeHandler }) => {
+const TaskNetworkInner = ({
+    initialData,
+    onNodesChangeHandler,
+    groups = [],
+    selectedGroupId = 'all',
+    onSelectGroup,
+    selectedGroup = null,
+}) => {
+    const navigate = useNavigate();
     const [isInteractive, setIsInteractive] = useState(true);
     const [nodes, setNodes, onNodesChange] = useNodesState(initialData.initialNodes);
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialData.initialEdges);
@@ -57,22 +66,94 @@ const TaskNetworkInner = ({ initialData, onNodesChangeHandler }) => {
         <div className={styles.container}>
             <div className={styles.buttonWrapper}>
                 <div className={styles.buttonGroupLeft}>
-                    <Link to="/" className={styles.backLink}>
-                        <MyButton>Назад</MyButton>
-                    </Link>
-                </div>
-                <div className={styles.buttonGroup}>
+                    <MyButton
+                        className={styles.backLink}
+                        onClick={() => navigate('/')}
+                    >
+                        <FaArrowLeft /> Назад
+                    </MyButton>
                 </div>
             </div>
-            <h1 className={styles.title}>Мережевий графік завдань</h1>
-            <div className={styles.buttonGroup && styles.buttonWrapper}>
-                <MyButton
-                    onClick={initialData.handleResetPositions}
-                    className={styles.resetButton}
-                >
-                    Скинути позиції
-                </MyButton>
+
+            <h1 className={styles.title}>
+                {selectedGroup ? `Мережевий графік: ${selectedGroup.title}` : 'Мережевий графік завдань'}
+            </h1>
+
+            <div className={styles.controlsBar}>
+                <div className={styles.filterGroup}>
+                    <label className={styles.filterLabel} htmlFor="project-network-filter">
+                        Проєкт:
+                    </label>
+                    <select
+                        id="project-network-filter"
+                        className={styles.projectSelect}
+                        value={selectedGroupId}
+                        onChange={(e) => onSelectGroup(e.target.value)}
+                    >
+                        <option value="all">Усі проєкти ({groups.length})</option>
+                        {groups.map((g) => (
+                            <option key={g._id} value={g._id}>
+                                {g.title} ({g.tasks?.length || 0} задач)
+                            </option>
+                        ))}
+                    </select>
+                    {selectedGroupId !== 'all' && (
+                        <button
+                            type="button"
+                            className={styles.resetFilterButton}
+                            onClick={() => onSelectGroup('all')}
+                            title="Показати всі проєкти"
+                        >
+                            Всі проєкти
+                        </button>
+                    )}
+                </div>
+
+                <div className={styles.actionButtons}>
+                    <MyButton
+                        onClick={initialData.handleResetPositions}
+                        className={styles.resetButton}
+                    >
+                        Скинути позиції
+                    </MyButton>
+
+                    <button
+                        type="button"
+                        className={styles.ganttLinkButton}
+                        onClick={() => {
+                            if (selectedGroupId !== 'all') {
+                                navigate(`/gantt?group=${selectedGroupId}`);
+                            } else {
+                                navigate('/gantt');
+                            }
+                        }}
+                    >
+                        Діаграма Ганта
+                    </button>
+                </div>
+
+                <div className={styles.legend} aria-label="Легенда вузлів">
+                    <span className={styles.legendItem}>
+                        <i className={`${styles.legendSwatch} ${styles.legendNormal}`} /> Звичайна
+                    </span>
+                    <span className={styles.legendItem}>
+                        <i className={`${styles.legendSwatch} ${styles.legendPriority}`} /> Пріоритетна
+                    </span>
+                    <span className={styles.legendItem}>
+                        <i className={`${styles.legendSwatch} ${styles.legendMissed}`} /> Прострочена
+                    </span>
+                    <span className={styles.legendItem}>
+                        <i className={`${styles.legendSwatch} ${styles.legendEnd}`} /> Кінець
+                    </span>
+                    <span className={styles.legendItem}>
+                        <i className={`${styles.legendMarker} ${styles.earlyMarker}`} /> Ранні терміни
+                    </span>
+                    <span className={styles.legendItem}>
+                        <i className={`${styles.legendMarker} ${styles.lateMarker}`} /> Пізні терміни
+                    </span>
+                </div>
             </div>
+
             <div className={styles.graphWrapper}>
                 <ReactFlow
                     nodes={nodes}
@@ -80,6 +161,8 @@ const TaskNetworkInner = ({ initialData, onNodesChangeHandler }) => {
                     onNodesChange={handleNodesChange}
                     onEdgesChange={onEdgesChange}
                     fitView
+                    minZoom={0.05}
+                    maxZoom={3}
                     nodesDraggable={isInteractive}
                     nodesConnectable={false}
                     elementsSelectable={true}
